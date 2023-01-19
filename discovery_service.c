@@ -34,8 +34,6 @@ void send_discovery_msg(int sockfd, struct sockaddr_in *addr, socklen_t len)
     }
 }
 
-
-
 void *listen_discovery(void *args)
 {
     int sockfd;
@@ -85,20 +83,17 @@ void *listen_discovery(void *args)
             printf("Successfully sent broadcast message\n");
         }
 
-        
         if (msg.type == DISCOVERY_TYPE)
         {
             char hostname[256], ip_address[16], mac_address[18];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
             add_participant(hostname, ip_address, mac_address, 1);
-
         }
     }
     close(sockfd);
     pthread_exit(NULL);
 }
-
 
 void participant_start()
 {
@@ -113,6 +108,8 @@ void participant_start()
     close(sockfd);
 }
 
+
+
 void get_mac_address(char *mac_address)
 {
     struct ifreq ifr;
@@ -122,13 +119,17 @@ void get_mac_address(char *mac_address)
 
     int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
     if (sock == -1)
-    { 
-    };
+    {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
 
     ifc.ifc_len = sizeof(buf);
     ifc.ifc_buf = buf;
     if (ioctl(sock, SIOCGIFCONF, &ifc) == -1)
-    { 
+    {
+        perror("ioctl");
+        exit(EXIT_FAILURE);
     }
 
     struct ifreq *it = ifc.ifc_req;
@@ -140,7 +141,7 @@ void get_mac_address(char *mac_address)
         if (ioctl(sock, SIOCGIFFLAGS, &ifr) == 0)
         {
             if (!(ifr.ifr_flags & IFF_LOOPBACK))
-            { 
+            {
                 if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0)
                 {
                     success = 1;
@@ -149,19 +150,22 @@ void get_mac_address(char *mac_address)
             }
         }
         else
-        { 
+        {
+            perror("ioctl");
+            exit(EXIT_FAILURE);
         }
     }
-
     if (success)
     {
-        memcpy(mac_address, ifr.ifr_hwaddr.sa_data, 6);
-        sprintf(mac_address, "%02x:%02x:%02x:%02x:%02x:%02x",
-                (unsigned char)mac_address[0],
-                (unsigned char)mac_address[1],
-                (unsigned char)mac_address[2],
-                (unsigned char)mac_address[3],
-                (unsigned char)mac_address[4],
-                (unsigned char)mac_address[5]);
+        char formatted_mac_address[18];
+        memcpy(formatted_mac_address, ifr.ifr_hwaddr.sa_data, 6);
+        sprintf(formatted_mac_address, "%02x:%02x:%02x:%02x:%02x:%02x",
+                (unsigned char)formatted_mac_address[0],
+                (unsigned char)formatted_mac_address[1],
+                (unsigned char)formatted_mac_address[2],
+                (unsigned char)formatted_mac_address[3],
+                (unsigned char)formatted_mac_address[4],
+                (unsigned char)formatted_mac_address[5]);
+        strcpy(mac_address, formatted_mac_address);
     }
 }
