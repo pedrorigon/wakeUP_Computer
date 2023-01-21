@@ -13,6 +13,7 @@
 #include "discovery_service.h"
 
 int main(int argc, char *argv[]){
+    arte_inicial();
     int manager = 0;
     if(argc > 1 && strcmp(argv[1], "manager") == 0)
         manager = 1;
@@ -53,4 +54,19 @@ int main(int argc, char *argv[]){
         }
     }
     return 0;
+}
+
+void arte_inicial(void){
+    printf("     ____    ______   __  __    __      __  _____   _   _   _____     ____  \n");
+    printf("    |  _ \\  |  ____| |  \\/  |   \\ \\    / / |_   _| | \\ | | |  __ \\   / __ \\ \n");  
+    printf("    | |_) | | |__    | \\  / |    \\ \\  / /    | |   |  \\| | | |  | | | |  | |\n");
+    printf("    |  _ <  |  __|   | |\\/| |     \\ \\/ /     | |   | . ` | | |  | | | |  | |\n");
+    printf("    | |_) | | |____  | |  | |      \\  /     _| |_  | |\\  | | |__| | | |__| |\n");
+    printf("    |____/  |______| |_|  |_|       \\/     |_____| |_| \\_| |_____/   \\____/ \n");
+    printf("                                        ____  \n");
+    printf("                              /\\      / __ \\ \n");
+    printf("                             /  \\    | |  | |\n");
+    printf("                            / /\\ \\   | |  | |\n");
+    printf("                           / ____ \\  | |__| |\n");
+    printf("                          /_/    \\_\\  \\____/ \n");
 }

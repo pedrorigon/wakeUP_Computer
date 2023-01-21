@@ -10,9 +10,11 @@
 #define DISCOVERY_TYPE 1
 #define CONFIRMED_TYPE 2
 
-void send_confirmed_msg(int sockfd, struct sockaddr_in *addr, socklen_t len, char mac_address[18])
+void send_confirmed_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16])
 {
     packet msg;
+    int sockfd;
+    struct hostent *server;
     msg.type = CONFIRMED_TYPE;
     msg.seqn = 0;
     msg.length = 0;
@@ -21,10 +23,20 @@ void send_confirmed_msg(int sockfd, struct sockaddr_in *addr, socklen_t len, cha
     strcpy(msg.mac_address, mac_address);
     msg.status = 1;
 
+    server = gethostbyname(ip_address);
+    if(!server)
+    {
+        printf("ERROR: Failed to resolve hostname: %s", ip_address);
+    }
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+        printf("ERROR: Failed to create socket");
+    }
     addr->sin_family = AF_INET;
     addr->sin_port = htons(RESPONSE_PORT);
-    addr->sin_addr.s_addr = INADDR_ANY;
+    addr->sin_addr = *((struct in_addr *)server->h_addr);
     bzero(&(addr->sin_zero), 8);
+
 
     int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
     if (n < 0)
@@ -58,7 +70,7 @@ void send_discovery_msg(int sockfd, struct sockaddr_in *addr, socklen_t len, cha
             printf("ERROR on sendto");
         }
     }
-   
+    close(sockfd);
 }
 
 void *listen_discovery(void *args)
@@ -115,7 +127,7 @@ void *listen_discovery(void *args)
             add_participant(hostname, ip_address, msg.mac_address, msg.status);
             char mac_adress_manager[18];
             get_mac_address(mac_adress_manager);
-            send_confirmed_msg(sockfd, &serv_addr, manlen, mac_adress_manager);
+            send_confirmed_msg(&serv_addr, manlen, mac_adress_manager, ip_address);
         }
     }
     close(sockfd);
@@ -222,6 +234,7 @@ void *listen_Confirmed(void *args)
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(RESPONSE_PORT);
+    bzero(&(serv_addr.sin_zero), 8); 
 
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
@@ -229,11 +242,11 @@ void *listen_Confirmed(void *args)
         printf("Foi aqui o erro!");
         pthread_exit(NULL);
     }
-
+    struct sockaddr_in cli_addr;
+    socklen_t clilen = sizeof(cli_addr);
     while(1){
 
-        struct sockaddr_in cli_addr;
-        socklen_t clilen = sizeof(cli_addr);
+        
         // Receive message
         int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
         if (n < 0)
