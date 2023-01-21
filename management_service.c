@@ -7,14 +7,20 @@ int num_participants = 0;
 pthread_mutex_t participants_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
-void add_participant(char* hostname, char* ip_address, char* mac_address, int status) {
+int add_participant(char* hostname, char* ip_address, char* mac_address, int status) {
     pthread_mutex_lock(&participants_mutex);
+    int atualizou_dados = 0;
     int index = find_participant(hostname);
     if (index != -1) {
         // Se o participante já estiver na tabela --> atualiza as informações
-        strcpy(participants[index].ip_address, ip_address);
-        strcpy(participants[index].mac_address, mac_address);
-        participants[index].status = status;
+        if(participants[index].status != status){
+            strcpy(participants[index].ip_address, ip_address);
+            strcpy(participants[index].mac_address, mac_address);
+            participants[index].status = status;
+            print_participants();
+        }else{
+            atualizou_dados = 1;
+        }
     } else {
         if (num_participants < MAX_PARTICIPANTS) {
             // Se o participante ainda não estiver na tabela --> adiciona
@@ -23,12 +29,14 @@ void add_participant(char* hostname, char* ip_address, char* mac_address, int st
             strcpy(participants[num_participants].mac_address, mac_address);
             participants[num_participants].status = status;
             num_participants++;
+            print_participants();
         } else {
             printf("Error: Maximum number of participants reached.\n");
         }
     }
-    print_participants();
+    //print_participants();
     pthread_mutex_unlock(&participants_mutex);
+    return atualizou_dados;
 }
 
 void remove_participant(char* hostname) {
@@ -69,7 +77,7 @@ int find_participant(char* hostname) {
 }
 
 void print_participants() {
-    
+    printf("----------------------------------\n");
     for (int i = 0; i < num_participants; i++) {
         printf("Hostname: %s\n", participants[i].hostname);
         printf("IP address: %s\n", participants[i].ip_address);

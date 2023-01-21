@@ -21,5 +21,5 @@ void send_discovery_msg(int sockfd, struct sockaddr_in*addr, socklen_t len);
 void* listen_discovery(void* args);
 void participant_start();
 void get_mac_address(char* mac_address);
-void* wait_for_response(void* args);
+void *listen_Confirmed(void *args);
 #endif

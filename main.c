@@ -31,7 +31,26 @@ int main(int argc, char *argv[]){
         }
 
     }else{
-        participant_start();
+        
+        pthread_t confirmed_thread;
+        pthread_t msg_discovery_thread;
+        int rc = pthread_create(&confirmed_thread, NULL, listen_Confirmed, NULL);
+        if(rc){
+            printf("Error creating listen_discovery thread\n");
+        }
+        int lc = pthread_create(&confirmed_thread, NULL, participant_start, NULL);
+        if(lc){
+            printf("Error creating listen_discovery thread\n");
+        }
+
+        printf("\n");
+        
+        int ret_join = pthread_join(confirmed_thread, NULL);
+        if(ret_join){
+            printf("Error joining thread\n");
+        }else{
+            printf("deu join\n");
+        }
     }
     return 0;
 }

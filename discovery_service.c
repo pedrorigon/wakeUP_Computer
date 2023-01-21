@@ -10,8 +10,32 @@
 #define DISCOVERY_TYPE 1
 #define CONFIRMED_TYPE 2
 
+void send_confirmed_msg(int sockfd, struct sockaddr_in *addr, socklen_t len, char mac_address[18])
+{
+    packet msg;
+    msg.type = CONFIRMED_TYPE;
+    msg.seqn = 0;
+    msg.length = 0;
+    msg.timestamp = time(NULL);
+    msg._payload = NULL;
+    strcpy(msg.mac_address, mac_address);
+    msg.status = 1;
+
+    addr->sin_family = AF_INET;
+    addr->sin_port = htons(RESPONSE_PORT);
+    addr->sin_addr.s_addr = INADDR_ANY;
+    bzero(&(addr->sin_zero), 8);
+
+    int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
+    if (n < 0)
+    {
+        printf("ERROR on sendto");
+    }
+}
+
 // Function to send a discovery message
-void send_discovery_msg(int sockfd, struct sockaddr_in *addr, socklen_t len)
+
+void send_discovery_msg(int sockfd, struct sockaddr_in *addr, socklen_t len, char mac_address[18])
 {
     packet msg;
     msg.type = DISCOVERY_TYPE;
@@ -19,19 +43,22 @@ void send_discovery_msg(int sockfd, struct sockaddr_in *addr, socklen_t len)
     msg.length = 0;
     msg.timestamp = time(NULL);
     msg._payload = NULL;
+    strcpy(msg.mac_address, mac_address);
+    msg.status = 1;
 
     int broadcast_enable = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable));
     addr->sin_addr.s_addr = htonl(INADDR_BROADCAST);
-    int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
-    if (n < 0)
-    {
-        printf("ERROR on sendto");
+
+    while(1){
+        usleep(1000000);
+        int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
+        if (n < 0)
+        {
+            printf("ERROR on sendto");
+        }
     }
-    else
-    {
-        printf("Successfully sent broadcast message\n");
-    }
+   
 }
 
 void *listen_discovery(void *args)
@@ -40,6 +67,7 @@ void *listen_discovery(void *args)
     struct sockaddr_in serv_addr;
     socklen_t manlen = sizeof(serv_addr);
     packet msg;
+    participant new_participant;
 
     // Create socket
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
@@ -78,17 +106,16 @@ void *listen_discovery(void *args)
             printf("Error on recvfrom");
             pthread_exit(NULL);
         }
-        else
-        {
-            printf("Successfully sent broadcast message\n");
-        }
 
         if (msg.type == DISCOVERY_TYPE)
         {
-            char hostname[256], ip_address[16], mac_address[18];
+            char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            add_participant(hostname, ip_address, mac_address, 1);
+            add_participant(hostname, ip_address, msg.mac_address, msg.status);
+            char mac_adress_manager[18];
+            get_mac_address(mac_adress_manager);
+            send_confirmed_msg(sockfd, &serv_addr, manlen, mac_adress_manager);
         }
     }
     close(sockfd);
@@ -104,11 +131,16 @@ void participant_start()
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(PORT);
     socklen_t manager_addrlen = sizeof(addr);
-    send_discovery_msg(sockfd, &addr, manager_addrlen);
+
+    char hostname[256], ip_address[16], mac_address[18];
+    getnameinfo((struct sockaddr *)&addr, manager_addrlen, hostname, sizeof(hostname), NULL, 0, 0);
+    inet_ntop(AF_INET, &(addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
+    get_mac_address(mac_address);
+    send_discovery_msg(sockfd, &addr, manager_addrlen, mac_address);
+
+    // send_discovery_msg(sockfd, &addr, manager_addrlen);
     close(sockfd);
 }
-
-
 
 void get_mac_address(char *mac_address)
 {
@@ -168,4 +200,61 @@ void get_mac_address(char *mac_address)
                 (unsigned char)formatted_mac_address[5]);
         strcpy(mac_address, formatted_mac_address);
     }
+}
+
+void *listen_Confirmed(void *args)
+{
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    socklen_t manlen = sizeof(serv_addr);
+    packet msg;
+    participant new_participant1;
+
+    // Create socket
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+        printf("Error opening socket");
+        pthread_exit(NULL);
+    }
+
+    // Bind socket to address and port
+    memset((char *)&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(RESPONSE_PORT);
+
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("Error on binding");
+        printf("Foi aqui o erro!");
+        pthread_exit(NULL);
+    }
+
+    while(1){
+
+        struct sockaddr_in cli_addr;
+        socklen_t clilen = sizeof(cli_addr);
+        // Receive message
+        int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
+        if (n < 0)
+        {
+            printf("Error on recvfrom");
+            pthread_exit(NULL);
+        }
+        if (msg.type == CONFIRMED_TYPE)
+        {
+            char hostname[256], ip_address[16];
+            getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
+            inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
+            int att_dados = add_participant(hostname, ip_address, msg.mac_address, msg.status);
+            if(att_dados == 0){
+                //printf("----------------------------------\n");
+                printf("Esse é o endereço de seu Manager!\n");
+                printf("----------------------------------\n");
+            }
+        }
+
+    }
+    close(sockfd);
+    pthread_exit(NULL);
 }
