@@ -4,6 +4,7 @@
         "netdb.h": "c",
         "management_service.h": "c",
         "string.h": "c",
-        "inet.h": "c"
+        "inet.h": "c",
+        "structs.h": "c"
     }
 }

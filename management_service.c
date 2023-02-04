@@ -82,7 +82,12 @@ void print_participants() {
         printf("Hostname: %s\n", participants[i].hostname);
         printf("IP address: %s\n", participants[i].ip_address);
         printf("MAC address: %s\n", participants[i].mac_address);
-        printf("Status: %d\n", participants[i].status);
+        if (participants[i].status == 1){
+            printf("Status: awaken\n");
+        }else{
+            printf("Status: asleep\n");
+        }
+        //printf("Status: %d\n", participants[i].status);
     }
     
 }
