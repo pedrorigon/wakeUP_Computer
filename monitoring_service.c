@@ -7,12 +7,10 @@
 #include "discovery_service.h"
 #include "monitoring_service.h"
 
-
 #define PORT_MONITORING 4002
 #define RESPONSE_PORT_MONITORING 4003
 #define SLEEP_STATUS_TYPE 3
 #define CONFIRMED_STATUS_TYPE 4
-
 
 void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16])
 {
@@ -26,11 +24,11 @@ void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac
     msg._payload = NULL;
     strcpy(msg.mac_address, mac_address);
     char ip_address_participant[16];
-    //inet_ntop(AF_INET, &(addr->sin_addr.s_addr), ip_address_participant, INET_ADDRSTRLEN);
+    // inet_ntop(AF_INET, &(addr->sin_addr.s_addr), ip_address_participant, INET_ADDRSTRLEN);
     msg.status = get_participant_status(mac_address);
 
     server = gethostbyname(ip_address);
-    if(!server)
+    if (!server)
     {
         printf("ERROR: Failed to resolve hostname: %s", ip_address);
     }
@@ -42,7 +40,6 @@ void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac
     addr->sin_port = htons(RESPONSE_PORT_MONITORING);
     addr->sin_addr = *((struct in_addr *)server->h_addr);
     bzero(&(addr->sin_zero), 8);
-
 
     int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
     if (n < 0)
@@ -67,7 +64,8 @@ void send_monitoring_msg(int sockfd, struct sockaddr_in *addr, socklen_t len)
     setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable));
     addr->sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
-    while(1){
+    while (1)
+    {
         usleep(1000000);
         int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
         if (n < 0)
@@ -130,7 +128,7 @@ void *listen_monitoring(void *args)
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            //add_participant(hostname, ip_address, msg.mac_address, msg.status);
+            // add_participant(hostname, ip_address, msg.mac_address, msg.status);
             char mac_adress_participant[18];
             get_mac_address(mac_adress_participant);
             send_confirmed_status_msg(&serv_addr, manlen, mac_adress_participant, ip_address);
@@ -178,7 +176,7 @@ void *listen_Confirmed_monitoring(void *args)
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(RESPONSE_PORT_MONITORING);
-    bzero(&(serv_addr.sin_zero), 8); 
+    bzero(&(serv_addr.sin_zero), 8);
 
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
@@ -187,9 +185,9 @@ void *listen_Confirmed_monitoring(void *args)
     }
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
-    while(1){
+    while (1)
+    {
 
-        
         // Receive message
         int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
         if (n < 0)
@@ -202,13 +200,23 @@ void *listen_Confirmed_monitoring(void *args)
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            int att_dados = add_participant(hostname, ip_address, msg.mac_address, msg.status);
-            //if(att_dados == 1){
-              //  printf("status permaneceu o mesmo.\n");
-           // }
+            int att_dados = add_participant(hostname, ip_address, msg.mac_address, msg.status, 10);
+            // if(att_dados == 1){
+            //   printf("status permaneceu o mesmo.\n");
+            // }
         }
-
     }
     close(sockfd);
     pthread_exit(NULL);
+}
+
+void exit_control()
+{
+    while (1)
+    {
+        usleep(1000000);
+       // printf("testando \n");
+        decrease_time();
+        //remove_inative_participant();
+    }
 }

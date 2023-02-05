@@ -25,6 +25,8 @@ int main(int argc, char *argv[])
         pthread_t discovery_thread;
         pthread_t monitoring_thread;
         pthread_t monitoring_confirmed_thread;
+        pthread_t exit_participants_control;
+
         int rc = pthread_create(&discovery_thread, NULL, listen_discovery, NULL);
         if (rc)
         {
@@ -37,6 +39,11 @@ int main(int argc, char *argv[])
         }
         int bc = pthread_create(&monitoring_confirmed_thread, NULL, listen_Confirmed_monitoring, NULL);
         if (bc)
+        {
+            printf("Error creating listen_discovery thread\n");
+        }
+        int kc = pthread_create(&exit_participants_control, NULL, exit_control, NULL);
+        if (kc)
         {
             printf("Error creating listen_discovery thread\n");
         }

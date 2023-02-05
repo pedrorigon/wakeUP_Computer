@@ -22,5 +22,6 @@ void send_monitoring_msg(int sockfd, struct sockaddr_in *addr, socklen_t len);
 void *listen_monitoring(void *args);
 void manager_start_monitoring_service();
 void *listen_Confirmed_monitoring(void *args);
+void exit_control(); 
 
 #endif
