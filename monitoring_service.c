@@ -128,7 +128,6 @@ void *listen_monitoring(void *args)
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            // add_participant(hostname, ip_address, msg.mac_address, msg.status);
             char mac_adress_participant[18];
             get_mac_address(mac_adress_participant);
             send_confirmed_status_msg(&serv_addr, manlen, mac_adress_participant, ip_address);
@@ -200,7 +199,7 @@ void *listen_Confirmed_monitoring(void *args)
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            int att_dados = add_participant(hostname, ip_address, msg.mac_address, msg.status, 10);
+            int att_dados = add_participant(hostname, ip_address, msg.mac_address, msg.status, 5);
             // if(att_dados == 1){
             //   printf("status permaneceu o mesmo.\n");
             // }
@@ -215,6 +214,6 @@ void exit_control()
     while (1)
     {
         usleep(1000000);
-        decrease_time();
+        remove_inative_participant();
     }
 }
