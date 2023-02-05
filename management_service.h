@@ -10,6 +10,14 @@
 #include <pthread.h>
 #define MAX_PARTICIPANTS 100
 
+// struct sockaddr_in
+// {
+//     short sin_family;
+//     unsigned short sin_port;
+//     struct in_addr sin_addr;
+//     char sin_zero[8];
+// };
+
 int add_participant(char* hostname, char* ip_address, char* mac_address, int status, int time_control);
 void remove_participant(char* mac_address);
 //void remove_participants(char **mac_addresses, int num_macs);
