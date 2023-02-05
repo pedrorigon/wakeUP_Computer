@@ -16,6 +16,14 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 
+// struct sockaddr_in
+// {
+//     short sin_family;
+//     unsigned short sin_port;
+//     struct in_addr sin_addr;
+//     char sin_zero[8];
+// };
+
 
 void send_discovery_msg(int sockfd, struct sockaddr_in*addr, socklen_t len, char mac_address[18]);
 void* listen_discovery(void* args);
