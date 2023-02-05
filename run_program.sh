@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Compiling..."
-gcc -o meuPrograma main.c discovery_service.c management_service.c -lpthread
+gcc -o meuPrograma main.c discovery_service.c management_service.c monitoring_service.c -lpthread
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful!"
