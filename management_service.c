@@ -173,7 +173,7 @@ int get_participant_status(char *mac_address)
     return status;
 }
 
-void decrease_time()
+void remove_inative_participant()
 {
     
     if (num_participants > 0)
