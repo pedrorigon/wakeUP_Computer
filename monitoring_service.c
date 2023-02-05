@@ -215,8 +215,6 @@ void exit_control()
     while (1)
     {
         usleep(1000000);
-       // printf("testando \n");
         decrease_time();
-        //remove_inative_participant();
     }
 }
