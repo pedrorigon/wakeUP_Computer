@@ -7,6 +7,7 @@ typedef struct {
     char ip_address[16];
     char mac_address[18];
     int status;
+    int time_control; 
 } participant;
 
 typedef struct __packet{
@@ -17,6 +18,7 @@ typedef struct __packet{
     char mac_address[18];
     int status;
     const char* _payload; //Dados da mensagem
+    int time_control; 
 } packet;
 
 #endif

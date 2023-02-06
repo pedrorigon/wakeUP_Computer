@@ -4,6 +4,8 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include "management_service.h"
+#include "monitoring_service.h"
+#include "discovery_service.h"
 
 #define PORT 4000
 #define RESPONSE_PORT 4001
@@ -24,7 +26,7 @@ void send_confirmed_msg(struct sockaddr_in *addr, socklen_t len, char mac_addres
     msg.status = 1;
 
     server = gethostbyname(ip_address);
-    if(!server)
+    if (!server)
     {
         printf("ERROR: Failed to resolve hostname: %s", ip_address);
     }
@@ -36,7 +38,6 @@ void send_confirmed_msg(struct sockaddr_in *addr, socklen_t len, char mac_addres
     addr->sin_port = htons(RESPONSE_PORT);
     addr->sin_addr = *((struct in_addr *)server->h_addr);
     bzero(&(addr->sin_zero), 8);
-
 
     int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
     if (n < 0)
@@ -62,7 +63,8 @@ void send_discovery_msg(int sockfd, struct sockaddr_in *addr, socklen_t len, cha
     setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable));
     addr->sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
-    while(1){
+    while (1)
+    {
         usleep(1000000);
         int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
         if (n < 0)
@@ -105,7 +107,9 @@ void *listen_discovery(void *args)
     {
         if (!message_shown)
         {
+            
             printf("Aguardando um novo participante entrar...\n");
+            printf("\n");
             message_shown = 1;
         }
         struct sockaddr_in cli_addr;
@@ -124,9 +128,10 @@ void *listen_discovery(void *args)
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            add_participant(hostname, ip_address, msg.mac_address, msg.status);
+            add_participant(hostname, ip_address, msg.mac_address, msg.status, 5);
             char mac_adress_manager[18];
             get_mac_address(mac_adress_manager);
+
             send_confirmed_msg(&serv_addr, manlen, mac_adress_manager, ip_address);
         }
     }
@@ -137,6 +142,7 @@ void *listen_discovery(void *args)
 void participant_start()
 {
     // Listen for manager broadcast
+    struct hostent *host_entry;
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
@@ -145,9 +151,24 @@ void participant_start()
     socklen_t manager_addrlen = sizeof(addr);
 
     char hostname[256], ip_address[16], mac_address[18];
+
+    // Obtém o hostname
+    // gethostname(hostname, 256);
+
     getnameinfo((struct sockaddr *)&addr, manager_addrlen, hostname, sizeof(hostname), NULL, 0, 0);
     inet_ntop(AF_INET, &(addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
+
+    // Obtém informações sobre o host
+    // host_entry = gethostbyname(hostname);
+
+    // Obtém o endereço IP
+    // inet_ntop(AF_INET, &(addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
+
+    // getnameinfo((struct sockaddr *)&addr, manager_addrlen, hostname, sizeof(hostname), NULL, 0, 0);
+    // inet_ntop(AF_INET, &(addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
     get_mac_address(mac_address);
+    // printf("o ip aqui eh\n: %s", ip_address);
+    add_participant_noprint(hostname, ip_address, mac_address, 1, 5);
     send_discovery_msg(sockfd, &addr, manager_addrlen, mac_address);
 
     // send_discovery_msg(sockfd, &addr, manager_addrlen);
@@ -234,18 +255,18 @@ void *listen_Confirmed(void *args)
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(RESPONSE_PORT);
-    bzero(&(serv_addr.sin_zero), 8); 
+    bzero(&(serv_addr.sin_zero), 8);
 
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
         printf("Error on binding");
-        printf("Foi aqui o erro!");
         pthread_exit(NULL);
     }
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
-    while(1){
-
+    char mac_address[18];
+    while (1)
+    {
         
         // Receive message
         int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
@@ -259,14 +280,36 @@ void *listen_Confirmed(void *args)
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            int att_dados = add_participant(hostname, ip_address, msg.mac_address, msg.status);
-            if(att_dados == 0){
-                //printf("----------------------------------\n");
+            /*int att_dados = add_participant(hostname, ip_address, msg.mac_address, msg.status);
+            if (att_dados == 0)
+            {
+                // printf("----------------------------------\n");
                 printf("Esse é o endereço de seu Manager!\n");
                 printf("----------------------------------\n");
+            }*/
+            // char mac_address[18];
+            if (strcmp(mac_address, msg.mac_address) != 0)
+            {
+                printf("------------------------------------------------\n");
+                printf("       Esse é o endereço de seu Manager!\n");
+                printf("------------------------------------------------\n");
+                printf("Hostname: %s\n", hostname);
+                printf("IP address: %s\n", ip_address);
+                printf("MAC address: %s\n", msg.mac_address);
+                strcpy(mac_address, msg.mac_address);
+                if (msg.status == 1)
+                {
+                    printf("Status: awaken\n");
+                }
+                else
+                {
+                    printf("Status: asleep\n");
+                }
+                printf("------------------------------------------------\n");
+                printf("\n");
             }
+            
         }
-
     }
     close(sockfd);
     pthread_exit(NULL);
