@@ -11,6 +11,7 @@
 #define RESPONSE_PORT_MONITORING 4003
 #define SLEEP_STATUS_TYPE 3
 #define CONFIRMED_STATUS_TYPE 4
+#define PROGRAM_EXIT_TYPE 5
 
 void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16])
 {

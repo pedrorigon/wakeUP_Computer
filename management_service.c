@@ -3,6 +3,7 @@
 #include "management_service.h"
 #include "discovery_service.h"
 #include "monitoring_service.h"
+#include "user_interface.h"
 
 participant participants[MAX_PARTICIPANTS];
 int num_participants = 0;
@@ -22,7 +23,7 @@ int add_participant(char *hostname, char *ip_address, char *mac_address, int sta
             strcpy(participants[index].ip_address, ip_address);
             strcpy(participants[index].mac_address, mac_address);
             participants[index].status = status;
-            print_participants();
+            sem_post(&sem_update_interface);
         }
         else
         {
@@ -40,7 +41,7 @@ int add_participant(char *hostname, char *ip_address, char *mac_address, int sta
             participants[num_participants].status = status;
             participants[num_participants].time_control = time_control;
             num_participants++;
-            print_participants();
+            sem_post(&sem_update_interface);
         }
         else
         {
@@ -96,7 +97,7 @@ void remove_participant(char *mac_address)
             participants[i] = participants[i + 1];
         }
         num_participants--;
-        print_participants();
+        sem_post(&sem_update_interface);
     }
     else
     {
@@ -130,30 +131,6 @@ int find_participant(char *mac_address)
         }
     }
     return -1;
-}
-
-void print_participants()
-{
-    printf("LISTA DE PARTICIPANTES: \n");
-    printf("------------------------------------------------\n");
-    for (int i = 0; i < num_participants; i++)
-    {
-        printf("PARTICIPANTE: %d \n", i + 1);
-        printf("Hostname: %s\n", participants[i].hostname);
-        printf("IP address: %s\n", participants[i].ip_address);
-        printf("MAC address: %s\n", participants[i].mac_address);
-        if (participants[i].status == 1)
-        {
-            printf("Status: awaken\n");
-        }
-        else
-        {
-            printf("Status: asleep\n");
-        }
-        printf("------------------------------------------------\n");
-
-    }
-    printf("\n\n");
 }
 
 int get_participant_status(char *mac_address)

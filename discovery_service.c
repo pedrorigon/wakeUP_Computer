@@ -12,12 +12,13 @@
 #define DISCOVERY_TYPE 1
 #define CONFIRMED_TYPE 2
 
-void send_confirmed_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16])
+
+void send_type_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16], int msg_type)
 {
     packet msg;
     int sockfd;
     struct hostent *server;
-    msg.type = CONFIRMED_TYPE;
+    msg.type = msg_type;
     msg.seqn = 0;
     msg.length = 0;
     msg.timestamp = time(NULL);
@@ -132,7 +133,7 @@ void *listen_discovery(void *args)
             char mac_adress_manager[18];
             get_mac_address(mac_adress_manager);
 
-            send_confirmed_msg(&serv_addr, manlen, mac_adress_manager, ip_address);
+            send_type_msg(&serv_addr, manlen, mac_adress_manager, ip_address, CONFIRMED_TYPE);
         }
     }
     close(sockfd);
