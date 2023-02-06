@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
             printf("Error creating exit_participants thread\n");
         }
 
-        rc = pthread_create(&user_interface_control, NULL, user_interface_thread, NULL);
+        rc = pthread_create(&user_interface_control, NULL, user_interface_manager_thread, NULL);
         if (rc)
         {
             printf("Error creating user_interface thread\n");
@@ -73,20 +73,27 @@ int main(int argc, char *argv[])
         pthread_t confirmed_thread;
         pthread_t msg_discovery_thread;
         pthread_t listen_monitoring_thread;
-        int dc = pthread_create(&confirmed_thread, NULL, listen_Confirmed, NULL);
-        if (dc)
+        pthread_t user_interface_control;
+
+        int rc = pthread_create(&confirmed_thread, NULL, listen_Confirmed, NULL);
+        if (rc)
         {
             printf("Error creating listen_discovery thread\n");
         }
-        int lc = pthread_create(&msg_discovery_thread, NULL, participant_start, NULL);
-        if (lc)
+        rc = pthread_create(&msg_discovery_thread, NULL, participant_start, NULL);
+        if (rc)
         {
             printf("Error creating listen_discovery thread\n");
         }
-        int ec = pthread_create(&listen_monitoring_thread, NULL, listen_monitoring, NULL);
-        if (ec)
+        rc = pthread_create(&listen_monitoring_thread, NULL, listen_monitoring, NULL);
+        if (rc)
         {
             printf("Error creating listen_discovery thread\n");
+        }
+        rc = pthread_create(&user_interface_control, NULL, user_interface_participant_thread, NULL);
+        if (rc)
+        {
+            printf("Error creating user_interface thread\n");
         }
 
         printf("\n");

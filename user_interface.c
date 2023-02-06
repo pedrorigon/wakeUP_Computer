@@ -35,7 +35,7 @@ void print_participants()
             if(participants[i].time_control > PARTICIPANT_TIMEOUT/2)
                 printf("    Status: " GRN "awaken\n" reset);
             else
-                printf("    Status: " YEL "Timing out\n" reset);
+                printf("    Status: " YEL "timing out\n" reset);
         }
         else
         {
@@ -48,7 +48,18 @@ void print_participants()
     printf("\n\n");
 }
 
-void *user_interface_thread(void *args) {
+void print_manager(void) {
+    if(!manager.status) {
+        printf(YEL " Aguardando manager...\n" reset);
+    } else {
+        printf(GRN " Manager adquirido\n" reset);
+        printf("    Hostname: %s\n", manager.hostname);
+        printf("    IP address: %s\n", manager.ip_address);
+        printf("    MAC address: %s\n", manager.mac_address);
+    }
+}
+
+void *user_interface_manager_thread(void *args) {
     if ( sem_init(&sem_update_interface, 0, 1) != 0 )
     {
         printf(RED "Error initializing UI semaphore!\n" reset);
@@ -59,5 +70,22 @@ void *user_interface_thread(void *args) {
         clear();
         arte_inicial();
         print_participants();
+    }
+}
+
+void *user_interface_participant_thread(void *args) {
+    if ( sem_init(&sem_update_interface, 0, 1) != 0 )
+    {
+        printf(RED "Error initializing UI semaphore!\n" reset);
+    }
+    clear();
+    arte_inicial();
+    print_manager();
+
+    while(1) {
+        sem_wait(&sem_update_interface);
+        clear();
+        arte_inicial();
+        print_manager();
     }
 }

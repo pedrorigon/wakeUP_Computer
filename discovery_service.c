@@ -6,12 +6,14 @@
 #include "management_service.h"
 #include "monitoring_service.h"
 #include "discovery_service.h"
+#include "user_interface.h"
 
 #define PORT 4000
 #define RESPONSE_PORT 4001
 #define DISCOVERY_TYPE 1
 #define CONFIRMED_TYPE 2
 
+participant manager = {0};
 
 void send_type_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16], int msg_type)
 {
@@ -291,7 +293,7 @@ void *listen_Confirmed(void *args)
             // char mac_address[18];
             if (strcmp(mac_address, msg.mac_address) != 0)
             {
-                printf("------------------------------------------------\n");
+                /*printf("------------------------------------------------\n");
                 printf("       Esse é o endereço de seu Manager!\n");
                 printf("------------------------------------------------\n");
                 printf("Hostname: %s\n", hostname);
@@ -307,7 +309,12 @@ void *listen_Confirmed(void *args)
                     printf("Status: asleep\n");
                 }
                 printf("------------------------------------------------\n");
-                printf("\n");
+                printf("\n");*/
+                strcpy(manager.hostname, hostname);
+                strcpy(manager.ip_address, ip_address);
+                strcpy(manager.mac_address, msg.mac_address);
+                manager.status = 1;
+                sem_post(&sem_update_interface);
             }
             
         }
