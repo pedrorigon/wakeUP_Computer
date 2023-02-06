@@ -129,7 +129,7 @@ void *listen_discovery(void *args)
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            add_participant(hostname, ip_address, msg.mac_address, msg.status, 5);
+            add_participant(hostname, ip_address, msg.mac_address, msg.status, PARTICIPANT_TIMEOUT);
             char mac_adress_manager[18];
             get_mac_address(mac_adress_manager);
 
@@ -169,7 +169,7 @@ void participant_start()
     // inet_ntop(AF_INET, &(addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
     get_mac_address(mac_address);
     // printf("o ip aqui eh\n: %s", ip_address);
-    add_participant_noprint(hostname, ip_address, mac_address, 1, 5);
+    add_participant_noprint(hostname, ip_address, mac_address, 1, PARTICIPANT_TIMEOUT);
     send_discovery_msg(sockfd, &addr, manager_addrlen, mac_address);
 
     // send_discovery_msg(sockfd, &addr, manager_addrlen);

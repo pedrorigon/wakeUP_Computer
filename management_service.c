@@ -177,6 +177,7 @@ void remove_inative_participant()
         {
             remove_participant(participants[remove_indices[i]].mac_address);
         }
-    
+
+        sem_post(&sem_update_interface);
     } 
 }

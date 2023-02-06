@@ -32,10 +32,14 @@ void print_participants()
         printf("    MAC address: %s\n", participants[i].mac_address);
         if (participants[i].status == 1)
         {
-            printf("    Status: " GRN "awaken\n" reset);
+            if(participants[i].time_control > PARTICIPANT_TIMEOUT/2)
+                printf("    Status: " GRN "awaken\n" reset);
+            else
+                printf("    Status: " YEL "Timing out\n" reset);
         }
         else
         {
+            
             printf("    Status: " CYN "asleep\n" reset);
         }
         printf("\n ------------------------------------------------\n\n");
