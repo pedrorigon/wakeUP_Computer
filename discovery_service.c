@@ -6,18 +6,21 @@
 #include "management_service.h"
 #include "monitoring_service.h"
 #include "discovery_service.h"
+#include "user_interface.h"
 
 #define PORT 4000
 #define RESPONSE_PORT 4001
 #define DISCOVERY_TYPE 1
 #define CONFIRMED_TYPE 2
 
-void send_confirmed_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16])
+participant manager = {0};
+
+void send_type_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16], int msg_type)
 {
     packet msg;
     int sockfd;
     struct hostent *server;
-    msg.type = CONFIRMED_TYPE;
+    msg.type = msg_type;
     msg.seqn = 0;
     msg.length = 0;
     msg.timestamp = time(NULL);
@@ -128,11 +131,11 @@ void *listen_discovery(void *args)
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            add_participant(hostname, ip_address, msg.mac_address, msg.status, 5);
+            add_participant(hostname, ip_address, msg.mac_address, msg.status, PARTICIPANT_TIMEOUT);
             char mac_adress_manager[18];
             get_mac_address(mac_adress_manager);
 
-            send_confirmed_msg(&serv_addr, manlen, mac_adress_manager, ip_address);
+            send_type_msg(&serv_addr, manlen, mac_adress_manager, ip_address, CONFIRMED_TYPE);
         }
     }
     close(sockfd);
@@ -168,7 +171,7 @@ void participant_start()
     // inet_ntop(AF_INET, &(addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
     get_mac_address(mac_address);
     // printf("o ip aqui eh\n: %s", ip_address);
-    add_participant_noprint(hostname, ip_address, mac_address, 1, 5);
+    add_participant_noprint(hostname, ip_address, mac_address, 1, PARTICIPANT_TIMEOUT);
     send_discovery_msg(sockfd, &addr, manager_addrlen, mac_address);
 
     // send_discovery_msg(sockfd, &addr, manager_addrlen);
@@ -290,7 +293,7 @@ void *listen_Confirmed(void *args)
             // char mac_address[18];
             if (strcmp(mac_address, msg.mac_address) != 0)
             {
-                printf("------------------------------------------------\n");
+                /*printf("------------------------------------------------\n");
                 printf("       Esse é o endereço de seu Manager!\n");
                 printf("------------------------------------------------\n");
                 printf("Hostname: %s\n", hostname);
@@ -306,7 +309,12 @@ void *listen_Confirmed(void *args)
                     printf("Status: asleep\n");
                 }
                 printf("------------------------------------------------\n");
-                printf("\n");
+                printf("\n");*/
+                strcpy(manager.hostname, hostname);
+                strcpy(manager.ip_address, ip_address);
+                strcpy(manager.mac_address, msg.mac_address);
+                manager.status = 1;
+                sem_post(&sem_update_interface);
             }
             
         }
