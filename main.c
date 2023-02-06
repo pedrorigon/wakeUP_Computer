@@ -8,6 +8,7 @@
 #include <string.h>
 #include <netdb.h>
 #include <pthread.h>
+
 #include "structs.h"
 #include "management_service.h"
 #include "discovery_service.h"
