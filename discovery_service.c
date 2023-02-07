@@ -7,75 +7,100 @@
 #include "monitoring_service.h"
 #include "discovery_service.h"
 #include "user_interface.h"
+#include "nanopb/pb_common.h"
+#include "nanopb/pb_encode.h"
+#include "nanopb/pb_decode.h"
+#include "messages.pb.h"
 
-#define PORT 4000
+#define DISCOVERY_PORT 4000
 #define RESPONSE_PORT 4001
 #define DISCOVERY_TYPE 1
 #define CONFIRMED_TYPE 2
 
+#define BUFFER_SIZE (Packet_size)
+
 participant manager = {0};
 
-void send_type_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16], int msg_type)
+int send_message(Packet *packet, char ip_address[16], in_port_t port, bool broadcast)
 {
-    packet msg;
     int sockfd;
-    struct hostent *server;
-    msg.type = msg_type;
-    msg.seqn = 0;
-    msg.length = 0;
-    msg.timestamp = time(NULL);
-    msg._payload = NULL;
-    strcpy(msg.mac_address, mac_address);
-    msg.status = 1;
 
-    server = gethostbyname(ip_address);
-    if (!server)
-    {
-        printf("ERROR: Failed to resolve hostname: %s", ip_address);
-    }
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
     {
         printf("ERROR: Failed to create socket");
     }
-    addr->sin_family = AF_INET;
-    addr->sin_port = htons(RESPONSE_PORT);
-    addr->sin_addr = *((struct in_addr *)server->h_addr);
-    bzero(&(addr->sin_zero), 8);
 
-    int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
-    if (n < 0)
+   
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
     {
-        printf("ERROR on sendto");
+        printf("ERROR: Failed to create socket");
     }
+
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+
+    if(broadcast) {
+        int broadcast_enable = 1;
+        setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable));
+        addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+    } else {
+        struct hostent *server;
+        server = gethostbyname(ip_address);
+
+        if (!server)
+        {
+            printf("ERROR: Failed to resolve hostname: %s", ip_address);
+        }
+        addr.sin_addr = *((struct in_addr *)server->h_addr);
+    }
+    bzero(&(addr.sin_zero), 8);
+
+    uint8_t buffer[BUFFER_SIZE];
+    pb_ostream_t stream = pb_ostream_from_buffer(buffer, Packet_size);
+    bool status = pb_encode(&stream, Packet_fields, packet);
+    int message_length = stream.bytes_written;
+
+    if (!status) {
+        printf("Encoding failed: %s\n", PB_GET_ERROR(&stream));
+        return -1;
+    }
+
+    int rc = sendto(sockfd, buffer, message_length, 0, (struct sockaddr *)&addr, sizeof(addr));
+    close(sockfd);
+    return rc;
 }
 
 // Function to send a discovery message
 
-void send_discovery_msg(int sockfd, struct sockaddr_in *addr, socklen_t len, char mac_address[18])
+void send_discovery_msg(char mac_address[18])
 {
-    packet msg;
-    msg.type = DISCOVERY_TYPE;
-    msg.seqn = 0;
-    msg.length = 0;
-    msg.timestamp = time(NULL);
-    msg._payload = NULL;
-    strcpy(msg.mac_address, mac_address);
-    msg.status = 1;
-
-    int broadcast_enable = 1;
-    setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable));
-    addr->sin_addr.s_addr = htonl(INADDR_BROADCAST);
-
+    uint32_t seqn = 0;
     while (1)
     {
         usleep(1000000);
-        int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
+        Packet packet = { 
+            .seqn = seqn,
+            .timestamp = time(NULL),
+            .type = MessageType_DISCOVERY,
+            .which_payload = Packet_discovery_tag
+         };
+        
+        Discovery discovery = {
+            .status = MachineStatus_WOKE
+        };
+        
+        strcpy(discovery.mac_address, mac_address);
+        packet.payload.discovery = discovery;
+
+        int n = send_message(&packet, "255.255.255.255", DISCOVERY_PORT, true);
+
         if (n < 0)
         {
-            printf("ERROR on sendto");
+            printf("ERROR on send_message");
         }
+        seqn++;
     }
-    close(sockfd);
 }
 
 void *listen_discovery(void *args)
@@ -83,7 +108,6 @@ void *listen_discovery(void *args)
     int sockfd;
     struct sockaddr_in serv_addr;
     socklen_t manlen = sizeof(serv_addr);
-    packet msg;
     participant new_participant;
 
     // Create socket
@@ -97,7 +121,7 @@ void *listen_discovery(void *args)
     memset((char *)&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port = htons(PORT);
+    serv_addr.sin_port = htons(DISCOVERY_PORT);
 
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
@@ -118,24 +142,46 @@ void *listen_discovery(void *args)
         struct sockaddr_in cli_addr;
         socklen_t clilen = sizeof(cli_addr);
 
+        uint8_t buffer[BUFFER_SIZE] = {0};
         // Receive message
-        int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
+        int n = recvfrom(sockfd, buffer, Packet_size, 0, (struct sockaddr *)&cli_addr, &clilen);
         if (n < 0)
         {
             printf("Error on recvfrom");
             pthread_exit(NULL);
         }
 
-        if (msg.type == DISCOVERY_TYPE)
+        pb_istream_t stream = pb_istream_from_buffer(buffer, n);
+        Packet packet = Packet_init_zero;
+        int status = pb_decode(&stream, Packet_fields, &packet);
+        
+        /* Check for errors... */
+        if (!status)
+        {
+            printf("Decoding failed: %s\n", PB_GET_ERROR(&stream));
+            return 1;
+        }
+
+        if (packet.type == MessageType_DISCOVERY)
         {
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            add_participant(hostname, ip_address, msg.mac_address, msg.status, PARTICIPANT_TIMEOUT);
+            add_participant(hostname, ip_address, packet.payload.discovery.mac_address, packet.payload.discovery.status, PARTICIPANT_TIMEOUT);
             char mac_adress_manager[18];
             get_mac_address(mac_adress_manager);
 
-            send_type_msg(&serv_addr, manlen, mac_adress_manager, ip_address, CONFIRMED_TYPE);
+            Packet confirmation_packet = {
+                .timestamp = time(NULL),
+                .type = MessageType_CONFIRMATION,
+                .which_payload = Packet_confirmation_tag,
+            };
+            Confirmation confirmation = {
+                .status = MachineStatus_WOKE
+            };
+            strcpy(confirmation.mac_address, mac_adress_manager);
+            confirmation_packet.payload.confirmation = confirmation;            
+            send_message(&confirmation_packet, "255.255.255.255", RESPONSE_PORT, true);
         }
     }
     close(sockfd);
@@ -145,13 +191,11 @@ void *listen_discovery(void *args)
 void participant_start()
 {
     // Listen for manager broadcast
-    struct hostent *host_entry;
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(PORT);
-    socklen_t manager_addrlen = sizeof(addr);
+    addr.sin_port = htons(DISCOVERY_PORT);
+    socklen_t manager_addrlen = sizeof(struct sockaddr_in);
 
     char hostname[256], ip_address[16], mac_address[18];
 
@@ -172,10 +216,99 @@ void participant_start()
     get_mac_address(mac_address);
     // printf("o ip aqui eh\n: %s", ip_address);
     add_participant_noprint(hostname, ip_address, mac_address, 1, PARTICIPANT_TIMEOUT);
-    send_discovery_msg(sockfd, &addr, manager_addrlen, mac_address);
 
-    // send_discovery_msg(sockfd, &addr, manager_addrlen);
+    Discovery discovery = {
+        .status = MachineStatus_WOKE
+    };
+
+    strcpy(discovery.hostname, hostname);
+    strcpy(discovery.mac_address, mac_address);
+
+    Packet packet = {
+        .timestamp = time(NULL),
+        .type = MessageType_DISCOVERY,
+        .which_payload = Packet_discovery_tag,
+        .payload.discovery = discovery
+    };
+
+    packet.payload.discovery = discovery;
+    send_message(&packet, "255.255.255.255", DISCOVERY_PORT, true);
+
+    //send_discovery_msg(mac_address);
+}
+
+void *listen_Confirmed(void *args)
+{
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    socklen_t manlen = sizeof(serv_addr);
+    participant new_participant1;
+
+    // Create socket
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+        printf("Error opening socket");
+        pthread_exit(NULL);
+    }
+
+    // Bind socket to address and port
+    memset((char *)&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(RESPONSE_PORT);
+    bzero(&(serv_addr.sin_zero), 8);
+
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("Error on binding");
+        pthread_exit(NULL);
+    }
+    struct sockaddr_in cli_addr;
+    socklen_t clilen = sizeof(cli_addr);
+    char mac_address[18];
+    while (1)
+    {
+        
+        uint8_t buffer[BUFFER_SIZE] = {0};
+        // Receive message
+        int n = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&cli_addr, &clilen);
+        if (n < 0)
+        {
+            printf("Error on recvfrom");
+            pthread_exit(NULL);
+        }
+
+        pb_istream_t stream = pb_istream_from_buffer(buffer, n);
+        Packet packet = Packet_init_zero;
+        int status = pb_decode(&stream, Packet_fields, &packet);
+        if (!status)
+        {
+            printf("Decoding failed: %s\n", PB_GET_ERROR(&stream));
+            return 1;
+        }
+
+        printf("Packet type aaaa: %d\n", packet.type);
+        if (packet.type == MessageType_CONFIRMATION)
+        {
+            char hostname[256], ip_address[16];
+            getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
+            inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
+            puts("Confirmation received!");
+            //printf("mac_address: %s, payload address: %s\n", mac_address, packet.payload.confirmation.mac_address);
+            printf("status: %s\n", packet.payload.discovery.mac_address);
+            if (strcmp(mac_address, packet.payload.confirmation.mac_address) != 0)
+            {
+                strcpy(manager.hostname, hostname);
+                strcpy(manager.ip_address, ip_address);
+                strcpy(manager.mac_address, packet.payload.confirmation.mac_address);
+                manager.status = 1;
+                sem_post(&sem_update_interface);
+            }
+            
+        }
+    }
     close(sockfd);
+    pthread_exit(NULL);
 }
 
 void get_mac_address(char *mac_address)
@@ -236,89 +369,4 @@ void get_mac_address(char *mac_address)
                 (unsigned char)formatted_mac_address[5]);
         strcpy(mac_address, formatted_mac_address);
     }
-}
-
-void *listen_Confirmed(void *args)
-{
-    int sockfd;
-    struct sockaddr_in serv_addr;
-    socklen_t manlen = sizeof(serv_addr);
-    packet msg;
-    participant new_participant1;
-
-    // Create socket
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-    {
-        printf("Error opening socket");
-        pthread_exit(NULL);
-    }
-
-    // Bind socket to address and port
-    memset((char *)&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port = htons(RESPONSE_PORT);
-    bzero(&(serv_addr.sin_zero), 8);
-
-    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        printf("Error on binding");
-        pthread_exit(NULL);
-    }
-    struct sockaddr_in cli_addr;
-    socklen_t clilen = sizeof(cli_addr);
-    char mac_address[18];
-    while (1)
-    {
-        
-        // Receive message
-        int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
-        if (n < 0)
-        {
-            printf("Error on recvfrom");
-            pthread_exit(NULL);
-        }
-        if (msg.type == CONFIRMED_TYPE)
-        {
-            char hostname[256], ip_address[16];
-            getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
-            inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            /*int att_dados = add_participant(hostname, ip_address, msg.mac_address, msg.status);
-            if (att_dados == 0)
-            {
-                // printf("----------------------------------\n");
-                printf("Esse é o endereço de seu Manager!\n");
-                printf("----------------------------------\n");
-            }*/
-            // char mac_address[18];
-            if (strcmp(mac_address, msg.mac_address) != 0)
-            {
-                /*printf("------------------------------------------------\n");
-                printf("       Esse é o endereço de seu Manager!\n");
-                printf("------------------------------------------------\n");
-                printf("Hostname: %s\n", hostname);
-                printf("IP address: %s\n", ip_address);
-                printf("MAC address: %s\n", msg.mac_address);
-                strcpy(mac_address, msg.mac_address);
-                if (msg.status == 1)
-                {
-                    printf("Status: awaken\n");
-                }
-                else
-                {
-                    printf("Status: asleep\n");
-                }
-                printf("------------------------------------------------\n");
-                printf("\n");*/
-                strcpy(manager.hostname, hostname);
-                strcpy(manager.ip_address, ip_address);
-                strcpy(manager.mac_address, msg.mac_address);
-                manager.status = 1;
-                sem_post(&sem_update_interface);
-            }
-            
-        }
-    }
-    close(sockfd);
-    pthread_exit(NULL);
 }

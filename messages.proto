@@ -1,0 +1,33 @@
+syntax = "proto3";
+import "nanopb.proto";
+
+enum MessageType {
+    DISCOVERY = 0;
+    CONFIRMATION = 1;
+}
+
+enum MachineStatus {
+    WOKE = 0;
+    ASLEEP = 1;
+}
+
+message Packet {
+    MessageType type = 1;
+    uint32 seqn = 2;
+    uint32 timestamp = 3;
+    oneof payload {
+        Discovery discovery = 4;
+        Confirmation confirmation = 5;
+    }
+}
+
+message Discovery {
+    string mac_address = 1 [(nanopb).max_length = 18];
+    string hostname = 2 [(nanopb).max_length = 255];
+    MachineStatus status = 3;
+}
+
+message Confirmation {
+    string mac_address = 1 [(nanopb).max_length = 18];
+    MachineStatus status = 2;
+}

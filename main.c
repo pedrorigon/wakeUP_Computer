@@ -39,17 +39,17 @@ int main(int argc, char *argv[])
         {
             printf("Error creating listen_discovery thread\n");
         }
-        rc = pthread_create(&monitoring_thread, NULL, manager_start_monitoring_service, NULL);
+        //rc = pthread_create(&monitoring_thread, NULL, manager_start_monitoring_service, NULL);
         if (rc)
         {
             printf("Error creating monitoring thread\n");
         }
-        rc = pthread_create(&monitoring_confirmed_thread, NULL, listen_Confirmed_monitoring, NULL);
+        //rc = pthread_create(&monitoring_confirmed_thread, NULL, listen_Confirmed_monitoring, NULL);
         if (rc)
         {
             printf("Error creating monitoring_confirmed thread\n");
         }
-        rc = pthread_create(&exit_participants_control, NULL, exit_control, NULL);
+        //rc = pthread_create(&exit_participants_control, NULL, exit_control, NULL);
         if (rc)
         {
             printf("Error creating exit_participants thread\n");
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
         {
             printf("Error creating listen_discovery thread\n");
         }
-        rc = pthread_create(&listen_monitoring_thread, NULL, listen_monitoring, NULL);
+        //rc = pthread_create(&listen_monitoring_thread, NULL, listen_monitoring, NULL);
         if (rc)
         {
             printf("Error creating listen_discovery thread\n");
