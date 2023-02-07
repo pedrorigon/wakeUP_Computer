@@ -78,7 +78,7 @@ void *user_interface_participant_thread(void *args) {
     {
         printf(RED "Error initializing UI semaphore!\n" reset);
     }
-    clear();
+    //clear();
     arte_inicial();
     print_manager();
 

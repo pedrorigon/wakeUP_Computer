@@ -17,7 +17,7 @@
 #include <net/if.h>
 
 
-void send_discovery_msg(int sockfd, struct sockaddr_in*addr, socklen_t len, char mac_address[18]);
+void send_discovery_msg(char mac_address[18]);
 void* listen_discovery(void* args);
 void participant_start();
 void get_mac_address(char* mac_address);

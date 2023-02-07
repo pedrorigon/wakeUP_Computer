@@ -15,19 +15,21 @@ typedef enum _MessageType {
     MessageType_CONFIRMATION = 1
 } MessageType;
 
-typedef enum _ConfirmationStatus {
-    ConfirmationStatus_OK = 0,
-    ConfirmationStatus_NOT_OK = 1
-} ConfirmationStatus;
+typedef enum _MachineStatus {
+    MachineStatus_WOKE = 0,
+    MachineStatus_ASLEEP = 1
+} MachineStatus;
 
 /* Struct definitions */
 typedef struct _Discovery {
     char mac_address[19];
     char hostname[256];
+    MachineStatus status;
 } Discovery;
 
 typedef struct _Confirmation {
-    ConfirmationStatus status;
+    char mac_address[19];
+    MachineStatus status;
 } Confirmation;
 
 typedef struct _Packet {
@@ -51,28 +53,31 @@ extern "C" {
 #define _MessageType_MAX MessageType_CONFIRMATION
 #define _MessageType_ARRAYSIZE ((MessageType)(MessageType_CONFIRMATION+1))
 
-#define _ConfirmationStatus_MIN ConfirmationStatus_OK
-#define _ConfirmationStatus_MAX ConfirmationStatus_NOT_OK
-#define _ConfirmationStatus_ARRAYSIZE ((ConfirmationStatus)(ConfirmationStatus_NOT_OK+1))
+#define _MachineStatus_MIN MachineStatus_WOKE
+#define _MachineStatus_MAX MachineStatus_ASLEEP
+#define _MachineStatus_ARRAYSIZE ((MachineStatus)(MachineStatus_ASLEEP+1))
 
 #define Packet_type_ENUMTYPE MessageType
 
+#define Discovery_status_ENUMTYPE MachineStatus
 
-#define Confirmation_status_ENUMTYPE ConfirmationStatus
+#define Confirmation_status_ENUMTYPE MachineStatus
 
 
 /* Initializer values for message structs */
 #define Packet_init_default                      {_MessageType_MIN, 0, 0, 0, {Discovery_init_default}}
-#define Discovery_init_default                   {"", ""}
-#define Confirmation_init_default                {_ConfirmationStatus_MIN}
+#define Discovery_init_default                   {"", "", _MachineStatus_MIN}
+#define Confirmation_init_default                {"", _MachineStatus_MIN}
 #define Packet_init_zero                         {_MessageType_MIN, 0, 0, 0, {Discovery_init_zero}}
-#define Discovery_init_zero                      {"", ""}
-#define Confirmation_init_zero                   {_ConfirmationStatus_MIN}
+#define Discovery_init_zero                      {"", "", _MachineStatus_MIN}
+#define Confirmation_init_zero                   {"", _MachineStatus_MIN}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define Discovery_mac_address_tag                1
 #define Discovery_hostname_tag                   2
-#define Confirmation_status_tag                  1
+#define Discovery_status_tag                     3
+#define Confirmation_mac_address_tag             1
+#define Confirmation_status_tag                  2
 #define Packet_type_tag                          1
 #define Packet_seqn_tag                          2
 #define Packet_timestamp_tag                     3
@@ -93,12 +98,14 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payload,confirmation,payload.confirmation), 
 
 #define Discovery_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   mac_address,       1) \
-X(a, STATIC,   SINGULAR, STRING,   hostname,          2)
+X(a, STATIC,   SINGULAR, STRING,   hostname,          2) \
+X(a, STATIC,   SINGULAR, UENUM,    status,            3)
 #define Discovery_CALLBACK NULL
 #define Discovery_DEFAULT NULL
 
 #define Confirmation_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UENUM,    status,            1)
+X(a, STATIC,   SINGULAR, STRING,   mac_address,       1) \
+X(a, STATIC,   SINGULAR, UENUM,    status,            2)
 #define Confirmation_CALLBACK NULL
 #define Confirmation_DEFAULT NULL
 
@@ -112,9 +119,9 @@ extern const pb_msgdesc_t Confirmation_msg;
 #define Confirmation_fields &Confirmation_msg
 
 /* Maximum encoded size of messages (where known) */
-#define Confirmation_size                        2
-#define Discovery_size                           278
-#define Packet_size                              295
+#define Confirmation_size                        22
+#define Discovery_size                           280
+#define Packet_size                              297
 
 #ifdef __cplusplus
 } /* extern "C" */

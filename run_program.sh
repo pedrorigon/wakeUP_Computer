@@ -14,7 +14,7 @@ else
 fi
 
 echo "Compiling..."
-gcc -o meuPrograma main.c discovery_service.c management_service.c monitoring_service.c user_interface.c messages.pb.c nanopb/*.c -lpthread
+gcc -o meuPrograma main.c discovery_service.c management_service.c user_interface.c messages.pb.c nanopb/*.c -lpthread -I nanopb
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful!"

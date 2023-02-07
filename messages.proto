@@ -6,6 +6,11 @@ enum MessageType {
     CONFIRMATION = 1;
 }
 
+enum MachineStatus {
+    WOKE = 0;
+    ASLEEP = 1;
+}
+
 message Packet {
     MessageType type = 1;
     uint32 seqn = 2;
@@ -19,13 +24,10 @@ message Packet {
 message Discovery {
     string mac_address = 1 [(nanopb).max_length = 18];
     string hostname = 2 [(nanopb).max_length = 255];
-}
-
-enum ConfirmationStatus {
-    OK = 0;
-    NOT_OK = 1;
+    MachineStatus status = 3;
 }
 
 message Confirmation {
-    ConfirmationStatus status = 1;
+    string mac_address = 1 [(nanopb).max_length = 18];
+    MachineStatus status = 2;
 }
