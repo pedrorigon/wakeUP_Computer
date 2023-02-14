@@ -1,6 +1,7 @@
 
 #include "ANSI-color-codes.h"
 #include "user_interface.h"
+#include "wakeonlan.h"
 
 sem_t sem_update_interface;
 
@@ -138,10 +139,9 @@ void *user_interface_manager_thread(void *args) {
                         continue;
                     } else {
                         printf("Acordando %s\n", hostname);
-                        sprintf(buffer, "wakeonlan %s", participants[index].mac_address);
-                        int rc = system(buffer); // Isso é uma vulnerabilidade horrível e devemos consertar
+                        int rc = wakeonlan(participants[index].mac_address);
                         if(rc != 00) {
-                            puts(RED "Erro ao tentar usar wakeonlan! Ele está instalado?" reset);
+                            puts(RED "Erro ao usar wakeonlan!" reset);
                             continue;
                         } else {
                             valid_command = 1;
