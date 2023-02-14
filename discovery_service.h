@@ -16,7 +16,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 
-
+void send_goodbye_msg(void);
 void send_discovery_msg(int sockfd, struct sockaddr_in*addr, socklen_t len, char mac_address[18]);
 void* listen_discovery(void* args);
 void participant_start();

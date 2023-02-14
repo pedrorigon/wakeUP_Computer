@@ -113,8 +113,8 @@ int main(int argc, char *argv[])
 }
 
 void sig_handler(int signum) {
-
-  //Return type of the handler function should be void
-  printf("\nInside handler function\n");
-  exit(0);
+    send_goodbye_msg();
+    //Return type of the handler function should be void
+    printf("\nSaindo graciosamente e avisando o manager\n");
+    exit(0);
 }

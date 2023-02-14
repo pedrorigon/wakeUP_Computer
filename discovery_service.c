@@ -12,10 +12,12 @@
 #define RESPONSE_PORT 4001
 #define DISCOVERY_TYPE 1
 #define CONFIRMED_TYPE 2
+#define GOODBYE_TYPE 3
 
 participant manager = {0};
 
-void send_type_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16], int msg_type)
+
+void send_type_msg(char mac_address[18], char ip_address[16], int msg_type)
 {
     packet msg;
     int sockfd;
@@ -37,16 +39,26 @@ void send_type_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18]
     {
         printf("ERROR: Failed to create socket");
     }
-    addr->sin_family = AF_INET;
-    addr->sin_port = htons(RESPONSE_PORT);
-    addr->sin_addr = *((struct in_addr *)server->h_addr);
-    bzero(&(addr->sin_zero), 8);
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(RESPONSE_PORT);
+    addr.sin_addr = *((struct in_addr *)server->h_addr);
+    bzero(&(addr.sin_zero), 8);
 
-    int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
+    int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)&addr, sizeof(addr));
     if (n < 0)
     {
         printf("ERROR on sendto");
     }
+}
+
+void send_goodbye_msg(void) {
+    if(!manager.ip_address) {
+        puts("Sem manager!");
+        return;
+    }
+
+    send_type_msg(manager.mac_address, manager.ip_address, GOODBYE_TYPE);
 }
 
 // Function to send a discovery message
@@ -139,7 +151,7 @@ void *listen_discovery(void *args)
                 char mac_adress_manager[18];
                 get_mac_address(mac_adress_manager);
 
-                send_type_msg(&serv_addr, manlen, mac_adress_manager, ip_address, CONFIRMED_TYPE);
+                send_type_msg(mac_adress_manager, ip_address, CONFIRMED_TYPE);
             }
         }
         close(sockfd);
