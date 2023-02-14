@@ -133,6 +133,18 @@ int find_participant(char *mac_address)
     return -1;
 }
 
+int find_participant_by_hostname(char *hostname)
+{
+    for (int i = 0; i < num_participants; i++)
+    {
+        if (strcmp(participants[i].hostname, hostname) == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 int get_participant_status(char *mac_address)
 {
     pthread_mutex_lock(&participants_mutex);

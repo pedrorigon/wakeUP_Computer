@@ -9,13 +9,6 @@ sem_t sem_update_interface;
 #include <sys/ioctl.h>
 #include <termios.h>
 
-struct termios orig_term_attr;
-
-void setup_terminal(void) {
-    /* set the terminal to raw mode */
-    tcgetattr(fileno(stdin), &orig_term_attr);
-}
-
 void setup_async_terminal(void) {
     struct termios term;
     tcgetattr(0, &term);
@@ -110,33 +103,20 @@ void *user_interface_manager_thread(void *args) {
     }
 
     while(1) {
-        sem_wait(&sem_update_interface);
-        clear();
-        arte_inicial();
-        print_participants();
-    }
-}
-
-void *user_interface_participant_thread(void *args) {
-    if ( sem_init(&sem_update_interface, 0, 1) != 0 )
-    {
-        printf(RED "Error initializing UI semaphore!\n" reset);
-    }
-    setup_terminal();
-
-    while(1) {
         setup_async_terminal();
         clear();
         arte_inicial();
-        print_manager();
+        print_participants();
         puts(" Pressione c para entrar em modo de comando");
         while(!kbhit() && sem_trywait(&sem_update_interface));
+        if(!kbhit()) continue; // Se saiu por causa do semáforo, segue em frente
         int key = get_hit();
         if(key == 'c') {
             restore_terminal();
             clear();
             arte_inicial();
-            puts(BWHT " Modo comando" reset);
+            puts(BWHT " Modo comando (WAKEUP <hostname>, EXIT)" reset);
+            print_participants();
             int valid_command = 0;
             char buffer[255] = {0};
              while(!valid_command) {
@@ -146,6 +126,68 @@ void *user_interface_participant_thread(void *args) {
 
                 // Lida com caso do usuário pressionar CTRL-D
                 if(feof(stdin)) { clearerr(stdin); break; };
+                buffer[strlen(buffer) - 1] = '\0';
+                if(strcmp(buffer, "EXIT") == 0) {
+                    exit(0);
+                } else if(strncmp(buffer, "WAKEUP ", sizeof("WAKEUP ") - 1) == 0) {
+                    char *hostname = buffer + sizeof("WAKEUP"); // eu odeio ponteiros mas aqui eles são úteis
+                    char buffer[255] = { 0 };
+                    int index = find_participant_by_hostname(hostname);
+                    if(index == -1) {
+                        puts(RED " Participante não encontrado!" reset);
+                        continue;
+                    } else {
+                        printf("Acordando %s\n", hostname);
+                        sprintf(buffer, "wakeonlan %s", participants[index].mac_address);
+                        int rc = system(buffer); // Isso é uma vulnerabilidade horrível e devemos consertar
+                        if(rc != 00) {
+                            puts(RED "Erro ao tentar usar wakeonlan! Ele está instalado?" reset);
+                            continue;
+                        } else {
+                            valid_command = 1;
+                            puts(GRN "Computador acordado com sucesso!" reset);
+                            usleep(3*1000*1000);
+                        }
+                        
+                    }
+                } else {
+                    puts(RED " Comando invalido!" reset);
+                }     
+            };
+        }
+    }
+}
+
+void *user_interface_participant_thread(void *args) {
+    if ( sem_init(&sem_update_interface, 0, 1) != 0 )
+    {
+        printf(RED "Error initializing UI semaphore!\n" reset);
+    }
+
+    while(1) {
+        setup_async_terminal();
+        clear();
+        arte_inicial();
+        print_manager();
+        puts(" Pressione c para entrar em modo de comando");
+        while(!kbhit() && sem_trywait(&sem_update_interface));
+        if(!kbhit()) continue; // Se saiu por causa do semáforo, segue em frente
+        int key = get_hit();
+        if(key == 'c') {
+            restore_terminal();
+            clear();
+            arte_inicial();
+            puts(BWHT " Modo comando (EXIT)" reset);
+            int valid_command = 0;
+            char buffer[255] = {0};
+            while(!valid_command) {
+                printf(" > ");
+                memset(buffer, 0, sizeof(buffer));
+                fgets(buffer, sizeof(buffer), stdin);
+
+                // Lida com caso do usuário pressionar CTRL-D
+                if(feof(stdin)) { clearerr(stdin); break; };
+                buffer[strlen(buffer) - 1] = '\0';
                 if(strcmp(buffer, "EXIT") == 0) {
                     send_goodbye_msg();
                     exit(0);
@@ -153,8 +195,6 @@ void *user_interface_participant_thread(void *args) {
                     puts(RED " Comando invalido!" reset);
                 }      
             };
-        } else if(key != EOF) {
-            puts(RED " Tecla inválida!" reset);
         }
     }
 }
