@@ -8,16 +8,10 @@
 #include "discovery_service.h"
 #include "user_interface.h"
 
-#define PORT 4000
-#define RESPONSE_PORT 4001
-#define DISCOVERY_TYPE 1
-#define CONFIRMED_TYPE 2
-#define GOODBYE_TYPE 3
-
 participant manager = {0};
 
 
-void send_type_msg(char mac_address[18], char ip_address[16], int msg_type)
+void send_type_msg(char mac_address[18], char ip_address[16], int port, int msg_type)
 {
     packet msg;
     int sockfd;
@@ -41,7 +35,7 @@ void send_type_msg(char mac_address[18], char ip_address[16], int msg_type)
     }
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(RESPONSE_PORT);
+    addr.sin_port = htons(port);
     addr.sin_addr = *((struct in_addr *)server->h_addr);
     bzero(&(addr.sin_zero), 8);
 
@@ -53,12 +47,15 @@ void send_type_msg(char mac_address[18], char ip_address[16], int msg_type)
 }
 
 void send_goodbye_msg(void) {
-    if(!manager.ip_address) {
+    if(!manager.status) {
         puts("Sem manager!");
         return;
     }
+    
+    char mac_adress[18];
+    get_mac_address(mac_adress);
 
-    send_type_msg(manager.mac_address, manager.ip_address, GOODBYE_TYPE);
+    send_type_msg(mac_adress, manager.ip_address, RESPONSE_PORT_MONITORING, PROGRAM_EXIT_TYPE);
 }
 
 // Function to send a discovery message
@@ -151,7 +148,7 @@ void *listen_discovery(void *args)
                 char mac_adress_manager[18];
                 get_mac_address(mac_adress_manager);
 
-                send_type_msg(mac_adress_manager, ip_address, CONFIRMED_TYPE);
+                send_type_msg(mac_adress_manager, ip_address, RESPONSE_PORT, CONFIRMED_TYPE);
             }
         }
         close(sockfd);

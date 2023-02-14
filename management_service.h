@@ -19,5 +19,5 @@ int find_participant(char* mac_address);
 void print_participants();
 void add_participant_noprint(char *hostname, char *ip_address, char *mac_address, int status, int time_control);
 int get_participant_status(char* mac_address);
-void remove_inative_participant();
+void check_asleep_participant();
 

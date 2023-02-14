@@ -21,4 +21,18 @@ typedef struct __packet{
     int time_control; 
 } packet;
 
+#define PORT 4000
+#define RESPONSE_PORT 4001
+#define PORT_MONITORING 4002
+#define RESPONSE_PORT_MONITORING 4003
+
+#define DISCOVERY_TYPE 1
+#define CONFIRMED_TYPE 2
+#define SLEEP_STATUS_TYPE 3
+#define CONFIRMED_STATUS_TYPE 4
+#define PROGRAM_EXIT_TYPE 5
+
+#define STATUS_ASLEEP 0
+#define STATUS_AWAKE 1
+
 #endif

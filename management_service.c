@@ -150,7 +150,7 @@ int get_participant_status(char *mac_address)
     return status;
 }
 
-void remove_inative_participant()
+void check_asleep_participant()
 {
     
     if (num_participants > 0)
@@ -175,7 +175,7 @@ void remove_inative_participant()
        
         for (int i = 0; i < remove_count; i++)
         {
-            remove_participant(participants[remove_indices[i]].mac_address);
+            participants[remove_indices[i]].status = STATUS_ASLEEP;
         }
 
         sem_post(&sem_update_interface);

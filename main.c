@@ -115,6 +115,6 @@ int main(int argc, char *argv[])
 void sig_handler(int signum) {
     send_goodbye_msg();
     //Return type of the handler function should be void
-    printf("\nSaindo graciosamente e avisando o manager\n");
+    printf("\nSaindo graciosamente\n");
     exit(0);
 }

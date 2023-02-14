@@ -7,12 +7,6 @@
 #include "discovery_service.h"
 #include "monitoring_service.h"
 
-#define PORT_MONITORING 4002
-#define RESPONSE_PORT_MONITORING 4003
-#define SLEEP_STATUS_TYPE 3
-#define CONFIRMED_STATUS_TYPE 4
-#define PROGRAM_EXIT_TYPE 5
-
 void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16])
 {
     packet msg;
@@ -123,7 +117,6 @@ void *listen_monitoring(void *args)
             printf("Error on recvfrom");
             pthread_exit(NULL);
         }
-
         if (msg.type == SLEEP_STATUS_TYPE)
         {
             char hostname[256], ip_address[16];
@@ -204,6 +197,8 @@ void *listen_Confirmed_monitoring(void *args)
             // if(att_dados == 1){
             //   printf("status permaneceu o mesmo.\n");
             // }
+        } else if (msg.type == PROGRAM_EXIT_TYPE) {
+            remove_participant(msg.mac_address);
         }
     }
     close(sockfd);
@@ -215,6 +210,6 @@ void exit_control()
     while (1)
     {
         usleep(1000000);
-        remove_inative_participant();
+        check_asleep_participant();
     }
 }
