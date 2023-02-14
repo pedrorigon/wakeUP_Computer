@@ -4,6 +4,50 @@
 
 sem_t sem_update_interface;
 
+
+/* https://stackoverflow.com/questions/2984307/how-to-handle-key-pressed-in-a-linux-console-in-c */
+#include <sys/ioctl.h>
+#include <termios.h>
+
+struct termios orig_term_attr;
+
+void setup_terminal(void) {
+    /* set the terminal to raw mode */
+    tcgetattr(fileno(stdin), &orig_term_attr);
+}
+
+void setup_async_terminal(void) {
+    struct termios term;
+    tcgetattr(0, &term);
+    term.c_lflag &= ~(ICANON | ECHO); // Disable echo as well
+    tcsetattr(0, TCSANOW, &term);
+}
+
+void restore_terminal(void) {
+    struct termios term;
+    tcgetattr(0, &term);
+    term.c_lflag |= ICANON | ECHO;
+    tcsetattr(0, TCSANOW, &term);
+}
+
+int kbhit()
+{
+    int byteswaiting;
+    ioctl(0, FIONREAD, &byteswaiting);
+    return byteswaiting > 0;
+}
+
+int get_hit()
+{
+    int buf = 0;
+    read(0, &buf, 1);
+    tcflush(0, TCIFLUSH);
+    return buf;
+}
+
+
+/* ----------------------------------------- */
+
 void arte_inicial(void)
 {
     clear();
@@ -78,14 +122,39 @@ void *user_interface_participant_thread(void *args) {
     {
         printf(RED "Error initializing UI semaphore!\n" reset);
     }
-    clear();
-    arte_inicial();
-    print_manager();
+    setup_terminal();
 
     while(1) {
-        sem_wait(&sem_update_interface);
+        setup_async_terminal();
         clear();
         arte_inicial();
         print_manager();
+        puts(" Pressione c para entrar em modo de comando");
+        while(!kbhit() && sem_trywait(&sem_update_interface));
+        int key = get_hit();
+        if(key == 'c') {
+            restore_terminal();
+            clear();
+            arte_inicial();
+            puts(BWHT " Modo comando" reset);
+            int valid_command = 0;
+            char buffer[255] = {0};
+             while(!valid_command) {
+                printf(" > ");
+                memset(buffer, 0, sizeof(buffer));
+                fgets(buffer, sizeof(buffer), stdin);
+
+                // Lida com caso do usuário pressionar CTRL-D
+                if(feof(stdin)) { clearerr(stdin); break; };
+                if(strcmp(buffer, "EXIT") == 0) {
+                    send_goodbye_msg();
+                    exit(0);
+                } else {
+                    puts(RED " Comando invalido!" reset);
+                }      
+            };
+        } else if(key != EOF) {
+            puts(RED " Tecla inválida!" reset);
+        }
     }
 }

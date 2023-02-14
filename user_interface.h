@@ -10,4 +10,6 @@ extern participant manager;
 void *user_interface_manager_thread(void *);
 void *user_interface_participant_thread(void *);
 
+void restore_terminal(void);
+
 #define clear() printf("\033[H\033[J")

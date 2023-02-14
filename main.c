@@ -116,5 +116,6 @@ void sig_handler(int signum) {
     send_goodbye_msg();
     //Return type of the handler function should be void
     printf("\nSaindo graciosamente\n");
+    restore_terminal();
     exit(0);
 }
