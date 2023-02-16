@@ -8,7 +8,9 @@ Para a compilação e execução elaboramos um script .sh para automatizar as ta
 1. Abra o terminal no Ubuntu (pressionando "Ctrl + Alt + T" no teclado).
 2. Navegue até a pasta onde o script "run_program.sh" está salvo.
 3. Verifique se o script "run_program.sh" tem permissão para ser executado. Se você ainda não concedeu permissão, use o seguinte comando para dar permissão de execução:
+```
 chmod +x run_program.sh
+```
 4. Agora você pode executar o script com ou sem o parâmetro "manager". 
 - Para executar o script como participante, basta digitar o seguinte comando:
   ```
