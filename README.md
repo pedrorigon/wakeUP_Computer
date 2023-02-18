@@ -1,22 +1,22 @@
 # wakeUP_Computer
 This project was undertaken as a criterion for evaluation in the subject of Operating Systems 2 at UFRGS. The objective of the work is to implement a "sleep management" service for workstations that belong to the same physical network segment of a large organization. 
 
-# Tutorial de como Rodar o programa
+# Tutorial on how to run the program
 
-Para a compilação e execução elaboramos um script .sh para automatizar as tarefas de compilação e execução. Aqui está o tutorial de como rodar o programa via script localizado no arquivo ZIP em anexo e como nome `run_program.sh`:
+To compile and execute the program, we have created a .sh script to automate the compilation and execution tasks. Here's a tutorial on how to run the program via the script located in the attached ZIP file and named run_program.sh
 
-1. Abra o terminal no Ubuntu (pressionando "Ctrl + Alt + T" no teclado).
-2. Navegue até a pasta onde o script "run_program.sh" está salvo.
-3. Verifique se o script "run_program.sh" tem permissão para ser executado. Se você ainda não concedeu permissão, use o seguinte comando para dar permissão de execução:
+1. Open the terminal in Ubuntu (by pressing "Ctrl + Alt + T" on the keyboard).
+2. Navigate to the folder where the "run_program.sh" script is saved.
+3. Check if the "run_program.sh" script has permission to be executed. If you haven't granted permission yet, use the following command to give execution permission:
 ```
 chmod +x run_program.sh
 ```
-4. Agora você pode executar o script com ou sem o parâmetro "manager". 
-- Para executar o script como participante, basta digitar o seguinte comando:
+4. Now, you can run the script with or without the "manager" parameter. 
+- To run the script as a participant, simply type the following command:
   ```
   ./run_program.sh
   ```
-- Se você quiser executar o script como "manager", basta digitar o seguinte comando:
+- If you want to run the script as a "manager", simply type the following command:
   ```
   ./run_program.sh manager
   ```
