@@ -1,5 +1,13 @@
-# wakeUP_Computer
-This project was undertaken as a criterion for evaluation in the subject of Operating Systems 2 at UFRGS. The objective of the work is to implement a "sleep management" service for workstations that belong to the same physical network segment of a large organization. 
+<h1> WakeUP Computer Project </h1>
+
+> Status: Developing
+
+### The practical work proposal is to implement a "sleep management" service for workstations that belong to the same physical network segment of a large organization. The goal of the service is to promote energy savings by encouraging employees to put their workstations to sleep after the end of the workday in the organization. In this case, the service must ensure that the workstations can be awakened if the employee wishes to remotely access a service on their workstation (for example, a file-sharing service to access personal files). This project was undertaken as a criterion for evaluation in the subject of Operating Systems 2 at UFRGS. The objective of the work is to implement a "sleep management" service for workstations that belong to the same physical network segment of a large organization. 
+
+> The work proposal is inspired by GreenUp, a solution for monitoring energy consumption and sleep management of workstations developed by Microsoft Research:
+```
+https://www.microsoft.com/en-us/research/project/greenup/
+```
 
 # Tutorial on how to run the program
 
