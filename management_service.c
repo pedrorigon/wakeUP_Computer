@@ -3,6 +3,7 @@
 #include "management_service.h"
 #include "discovery_service.h"
 #include "monitoring_service.h"
+#include "election_service.h"
 #include "user_interface.h"
 
 participant participants[MAX_PARTICIPANTS];
@@ -53,7 +54,7 @@ int add_participant(char *hostname, char *ip_address, char *mac_address, int sta
     return atualizou_dados;
 }
 
-void add_participant_noprint(char *hostname, char *ip_address, char *mac_address, int status, int time_control)
+void add_participant_noprint(char *hostname, char *ip_address, char *mac_address, int status, uint64_t unique_id, int time_control, int is_manager)
 {
     pthread_mutex_lock(&participants_mutex);
     int index = find_participant(mac_address);
@@ -64,6 +65,7 @@ void add_participant_noprint(char *hostname, char *ip_address, char *mac_address
         strcpy(participants[index].mac_address, mac_address);
         participants[index].status = status;
         participants[index].time_control = time_control;
+        participants[index].is_manager = is_manager;
     }
     else
     {
@@ -74,7 +76,9 @@ void add_participant_noprint(char *hostname, char *ip_address, char *mac_address
             strcpy(participants[num_participants].ip_address, ip_address);
             strcpy(participants[num_participants].mac_address, mac_address);
             participants[num_participants].status = status;
+            participants[num_participants].unique_id = unique_id;
             participants[num_participants].time_control = time_control;
+            participants[num_participants].is_manager = is_manager;
             num_participants++;
         }
         else
@@ -145,6 +149,23 @@ int find_participant_by_hostname(char *hostname)
     return -1;
 }
 
+void update_manager(uint64_t new_manager_id)
+{
+    pthread_mutex_lock(&participants_mutex);
+    current_manager_id = new_manager_id;
+    for (int i = 0; i < num_participants; i++)
+    {
+        if (participants[i].unique_id == new_manager_id)
+        {
+            // Atualize o manager atual com base na mensagem de vitória recebida
+            participants[i].is_manager = 1;
+            // current_manager_id = new_manager_id;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&participants_mutex);
+}
+
 int get_participant_status(char *mac_address)
 {
     pthread_mutex_lock(&participants_mutex);
@@ -162,9 +183,42 @@ int get_participant_status(char *mac_address)
     return status;
 }
 
+int find_participant_by_unique_id(uint64_t unique_id)
+{
+    pthread_mutex_lock(&participants_mutex);
+    int index = -1;
+    for (int i = 0; i < num_participants; i++)
+    {
+        if (participants[i].unique_id == unique_id)
+        {
+            index = i;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&participants_mutex);
+    return index;
+}
+
+int get_manager_status()
+{
+    int status = -1;
+    pthread_mutex_lock(&participants_mutex);
+    int index = find_participant_by_unique_id(current_manager_id);
+    if (index != -1)
+    {
+        status = participants[index].status;
+    }
+    else
+    {
+        printf("Error: Manager not found in table.\n");
+    }
+    pthread_mutex_unlock(&participants_mutex);
+    return status;
+}
+
 void check_asleep_participant()
 {
-    
+
     if (num_participants > 0)
     {
         pthread_mutex_lock(&participants_mutex);
@@ -172,24 +226,26 @@ void check_asleep_participant()
         int remove_count = 0;
         for (int i = 0; i < num_participants; i++)
         {
-            //printf("\n%d\n", participants[i].time_control);
-            if (participants[i].time_control > 0)
+            if (participants[i].unique_id != participant_id)
             {
-                participants[i].time_control--;
-            }
-            else
-            {
-                remove_indices[remove_count++] = i;
+                // printf("\n%d\n", participants[i].time_control);
+                if (participants[i].time_control > 0)
+                {
+                    participants[i].time_control--;
+                }
+                else
+                {
+                    remove_indices[remove_count++] = i;
+                }
             }
         }
         pthread_mutex_unlock(&participants_mutex);
 
-       
         for (int i = 0; i < remove_count; i++)
         {
             participants[remove_indices[i]].status = STATUS_ASLEEP;
         }
 
         sem_post(&sem_update_interface);
-    } 
+    }
 }

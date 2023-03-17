@@ -1,23 +1,25 @@
 
 #include "ANSI-color-codes.h"
 #include "user_interface.h"
+#include "election_service.h"
 #include "wakeonlan.h"
 
 sem_t sem_update_interface;
-
 
 /* https://stackoverflow.com/questions/2984307/how-to-handle-key-pressed-in-a-linux-console-in-c */
 #include <sys/ioctl.h>
 #include <termios.h>
 
-void setup_async_terminal(void) {
+void setup_async_terminal(void)
+{
     struct termios term;
     tcgetattr(0, &term);
     term.c_lflag &= ~(ICANON | ECHO); // Disable echo as well
     tcsetattr(0, TCSANOW, &term);
 }
 
-void restore_terminal(void) {
+void restore_terminal(void)
+{
     struct termios term;
     tcgetattr(0, &term);
     term.c_lflag |= ICANON | ECHO;
@@ -39,13 +41,12 @@ int get_hit()
     return buf;
 }
 
-
 /* ----------------------------------------- */
 
 void arte_inicial(void)
 {
     clear();
-    printf(BHBLU" ----------------------------------------------------------------------------- \n");
+    printf(BHBLU " ----------------------------------------------------------------------------- \n");
     printf(" |      _____ _                    _____            _             _          |             \n");
     printf(" |     / ____| |                  / ____|          | |           | |         |              \n");
     printf(" |    | (___ | | ___  ___ _ __   | |     ___  _ __ | |_ _ __ ___ | |         |                 \n");
@@ -55,7 +56,6 @@ void arte_inicial(void)
     printf(" |                       | |                                                 |\n");
     printf(" |                       |_|                                                 | \n");
     printf(" ----------------------------------------------------------------------------- \n\n" reset);
-
 }
 
 void print_participants()
@@ -64,32 +64,46 @@ void print_participants()
     printf(" ------------------------------------------------\n\n");
     for (int i = 0; i < num_participants; i++)
     {
-        printf(BWHT "  Participante: %d \n" reset, i + 1);
-        printf("    Hostname: %s\n", participants[i].hostname);
-        printf("    IP address: %s\n", participants[i].ip_address);
-        printf("    MAC address: %s\n", participants[i].mac_address);
+        if (participants[i].unique_id == current_manager_id)
+        {
+            printf(BWHT "    Participante: %d \n" reset, i + 1);
+            printf(RED "    Sou o Manager da aplicação nesse momento!\n");
+            printf(BWHT "    Hostname: %s\n", participants[i].hostname);
+            printf(BWHT "    IP address: %s\n", participants[i].ip_address);
+            printf(BWHT "    MAC address: %s\n", participants[i].mac_address);
+        }
+        else
+        {
+            printf(BWHT "  Participante: %d \n" reset, i + 1);
+            printf("    Hostname: %s\n", participants[i].hostname);
+            printf("    IP address: %s\n", participants[i].ip_address);
+            printf("    MAC address: %s\n", participants[i].mac_address);
+        }
         if (participants[i].status == 1)
         {
-            if(participants[i].time_control > PARTICIPANT_TIMEOUT/2)
+            if (participants[i].time_control > PARTICIPANT_TIMEOUT / 2)
                 printf("    Status: " GRN "awaken\n" reset);
             else
                 printf("    Status: " YEL "timing out\n" reset);
         }
         else
         {
-            
+
             printf("    Status: " CYN "asleep\n" reset);
         }
         printf("\n ------------------------------------------------\n\n");
-
     }
     printf("\n\n");
 }
 
-void print_manager(void) {
-    if(!manager.status) {
+void print_manager(void)
+{
+    if (!manager.status)
+    {
         printf(YEL " Aguardando manager...\n" reset);
-    } else {
+    }
+    else
+    {
         printf(GRN " Manager adquirido\n" reset);
         printf("    Hostname: %s\n", manager.hostname);
         printf("    IP address: %s\n", manager.ip_address);
@@ -97,22 +111,27 @@ void print_manager(void) {
     }
 }
 
-void *user_interface_manager_thread(void *args) {
-    if ( sem_init(&sem_update_interface, 0, 1) != 0 )
+void *user_interface_manager_thread(void *args)
+{
+    if (sem_init(&sem_update_interface, 0, 1) != 0)
     {
         printf(RED "Error initializing UI semaphore!\n" reset);
     }
 
-    while(1) {
+    while (!should_terminate_threads)
+    {
         setup_async_terminal();
         clear();
         arte_inicial();
         print_participants();
         puts(" Pressione c para entrar em modo de comando");
-        while(!kbhit() && sem_trywait(&sem_update_interface));
-        if(!kbhit()) continue; // Se saiu por causa do semáforo, segue em frente
+        while (!kbhit() && sem_trywait(&sem_update_interface))
+            ;
+        if (!kbhit())
+            continue; // Se saiu por causa do semáforo, segue em frente
         int key = get_hit();
-        if(key == 'c') {
+        if (key == 'c')
+        {
             restore_terminal();
             clear();
             arte_inicial();
@@ -120,81 +139,112 @@ void *user_interface_manager_thread(void *args) {
             print_participants();
             int valid_command = 0;
             char buffer[255] = {0};
-             while(!valid_command) {
+            while (!valid_command)
+            {
                 printf(" > ");
                 memset(buffer, 0, sizeof(buffer));
                 fgets(buffer, sizeof(buffer), stdin);
 
                 // Lida com caso do usuário pressionar CTRL-D
-                if(feof(stdin)) { clearerr(stdin); break; };
+                if (feof(stdin))
+                {
+                    clearerr(stdin);
+                    break;
+                };
                 buffer[strlen(buffer) - 1] = '\0';
-                if(strcmp(buffer, "EXIT") == 0) {
+                if (strcmp(buffer, "EXIT") == 0)
+                {
                     exit(0);
-                } else if(strncmp(buffer, "WAKEUP ", sizeof("WAKEUP ") - 1) == 0) {
+                }
+                else if (strncmp(buffer, "WAKEUP ", sizeof("WAKEUP ") - 1) == 0)
+                {
                     char *hostname = buffer + sizeof("WAKEUP"); // eu odeio ponteiros mas aqui eles são úteis
-                    char buffer[255] = { 0 };
+                    char buffer[255] = {0};
                     int index = find_participant_by_hostname(hostname);
-                    if(index == -1) {
+                    if (index == -1)
+                    {
                         puts(RED " Participante não encontrado!" reset);
                         continue;
-                    } else {
+                    }
+                    else
+                    {
                         printf("Acordando %s\n", hostname);
                         int rc = wakeonlan(participants[index].mac_address);
-                        if(rc != 00) {
+                        if (rc != 00)
+                        {
                             puts(RED "Erro ao usar wakeonlan!" reset);
                             continue;
-                        } else {
+                        }
+                        else
+                        {
                             valid_command = 1;
                             puts(GRN "Computador acordado com sucesso!" reset);
-                            usleep(3*1000*1000);
+                            usleep(3 * 1000 * 1000);
                         }
-                        
                     }
-                } else {
+                }
+                else
+                {
                     puts(RED " Comando invalido!" reset);
-                }     
+                }
             };
         }
     }
+    return NULL;
 }
 
-void *user_interface_participant_thread(void *args) {
-    if ( sem_init(&sem_update_interface, 0, 1) != 0 )
+void *user_interface_participant_thread(void *args)
+{
+    if (sem_init(&sem_update_interface, 0, 1) != 0)
     {
         printf(RED "Error initializing UI semaphore!\n" reset);
     }
 
-    while(1) {
+    while (!should_terminate_threads)
+    {
         setup_async_terminal();
         clear();
         arte_inicial();
+        print_participants();
         print_manager();
         puts(" Pressione c para entrar em modo de comando");
-        while(!kbhit() && sem_trywait(&sem_update_interface));
-        if(!kbhit()) continue; // Se saiu por causa do semáforo, segue em frente
+        while (!kbhit() && sem_trywait(&sem_update_interface))
+            ;
+        if (!kbhit())
+            continue; // Se saiu por causa do semáforo, segue em frente
         int key = get_hit();
-        if(key == 'c') {
+        if (key == 'c')
+        {
             restore_terminal();
             clear();
             arte_inicial();
             puts(BWHT " Modo comando (EXIT)" reset);
             int valid_command = 0;
             char buffer[255] = {0};
-            while(!valid_command) {
+            while (!valid_command)
+            {
                 printf(" > ");
                 memset(buffer, 0, sizeof(buffer));
                 fgets(buffer, sizeof(buffer), stdin);
 
                 // Lida com caso do usuário pressionar CTRL-D
-                if(feof(stdin)) { clearerr(stdin); break; };
+                if (feof(stdin))
+                {
+                    clearerr(stdin);
+                    break;
+                };
                 buffer[strlen(buffer) - 1] = '\0';
-                if(strcmp(buffer, "EXIT") == 0) {
+                if (strcmp(buffer, "EXIT") == 0)
+                {
                     send_goodbye_msg();
                     exit(0);
-                } else {
+                }
+                else
+                {
                     puts(RED " Comando invalido!" reset);
-                }      
+                }
             };
         }
     }
+    return NULL;
 }

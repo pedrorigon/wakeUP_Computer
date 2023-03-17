@@ -7,6 +7,14 @@
 #include "discovery_service.h"
 #include "monitoring_service.h"
 
+pthread_t confirmed_thread;
+pthread_t msg_discovery_thread;
+pthread_t listen_monitoring_thread;
+pthread_t user_interface_control;
+pthread_t exit_participants_control;
+pthread_t monitor_manager_status_thread;
+pthread_t election_listener_thread;
+
 void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16])
 {
     packet msg;
@@ -20,8 +28,8 @@ void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac
     strcpy(msg.mac_address, mac_address);
     char ip_address_participant[16];
     // inet_ntop(AF_INET, &(addr->sin_addr.s_addr), ip_address_participant, INET_ADDRSTRLEN);
-    msg.status = get_participant_status(mac_address);
-
+    /// msg.status = get_participant_status(mac_address); //achei teste
+    msg.status = 1;
     server = gethostbyname(ip_address);
     if (!server)
     {
@@ -99,7 +107,7 @@ void *listen_monitoring(void *args)
     }
 
     int message_shown = 0;
-    while (1)
+    while (!should_terminate_threads)
     {
         if (!message_shown)
         {
@@ -133,6 +141,12 @@ void *listen_monitoring(void *args)
 
 void manager_start_monitoring_service()
 {
+    // Verifique should_terminate_threads antes de executar a função
+    if (should_terminate_threads)
+    {
+        return;
+    }
+
     // Listen for manager broadcast
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct sockaddr_in addr;
@@ -143,7 +157,13 @@ void manager_start_monitoring_service()
 
     send_monitoring_msg(sockfd, &addr, manager_addrlen);
 
-    // send_discovery_msg(sockfd, &addr, manager_addrlen);
+    // Loop que verifica should_terminate_threads e faz uma pausa
+    while (!should_terminate_threads)
+    {
+        sleep(1); // Pause por um segundo (ou outro período de tempo desejado)
+    }
+
+    // Encerrar a função e fechar o socket
     close(sockfd);
 }
 
@@ -178,7 +198,7 @@ void *listen_Confirmed_monitoring(void *args)
     }
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
-    while (1)
+    while (!should_terminate_threads)
     {
 
         // Receive message
@@ -197,7 +217,9 @@ void *listen_Confirmed_monitoring(void *args)
             // if(att_dados == 1){
             //   printf("status permaneceu o mesmo.\n");
             // }
-        } else if (msg.type == PROGRAM_EXIT_TYPE) {
+        }
+        else if (msg.type == PROGRAM_EXIT_TYPE)
+        {
             remove_participant(msg.mac_address);
         }
     }
@@ -207,9 +229,42 @@ void *listen_Confirmed_monitoring(void *args)
 
 void exit_control()
 {
-    while (1)
+    while (!should_terminate_threads)
     {
         usleep(1000000);
         check_asleep_participant();
     }
+}
+
+void *monitor_manager_status(void *arg)
+{
+    while (1)
+    {
+        sleep(5); // Verifica o status do gerente a cada 5 segundos
+
+        if (get_manager_status() == 0)
+        {
+            printf("O manager saiu, iniciando processo de eleição.\n");
+            int new_manager = start_election();
+            if (new_manager)
+            {
+                // Define a variável de controle para encerrar os threads de participante
+                should_terminate_threads = 1;
+
+                // Aguarde os threads de participante terminarem
+                pthread_join(confirmed_thread, NULL);
+                pthread_join(msg_discovery_thread, NULL);
+                pthread_join(listen_monitoring_thread, NULL);
+                pthread_join(user_interface_control, NULL);
+                pthread_join(exit_participants_control, NULL);
+                pthread_join(monitor_manager_status_thread, NULL);
+                pthread_join(election_listener_thread, NULL);
+
+                // Inicia os threads de gerente
+                start_manager_threads();
+            }
+            break;
+        }
+    }
+    return NULL;
 }

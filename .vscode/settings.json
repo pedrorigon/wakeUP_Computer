@@ -6,6 +6,15 @@
         "string.h": "c",
         "inet.h": "c",
         "structs.h": "c",
-        "discovery_service.h": "c"
-    }
+        "discovery_service.h": "c",
+        "monitoring_service.h": "c",
+        "ansi-color-codes.h": "c",
+        "election_service.h": "c",
+        "unistd.h": "c",
+        "user_interface.h": "c",
+        "pthread.h": "c",
+        "if.h": "c",
+        "ioctl.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

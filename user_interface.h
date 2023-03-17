@@ -1,11 +1,13 @@
 #include <semaphore.h>
 #include "management_service.h"
+#include "election_service.h"
 #include "structs.h"
 
 extern sem_t sem_update_interface;
 extern participant participants[MAX_PARTICIPANTS];
 extern int num_participants;
 extern participant manager;
+extern int should_terminate_threads;
 
 void *user_interface_manager_thread(void *);
 void *user_interface_participant_thread(void *);

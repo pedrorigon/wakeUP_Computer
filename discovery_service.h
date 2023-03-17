@@ -15,12 +15,18 @@
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
+#include <ifaddrs.h>
+#include "election_service.h"
+
+extern int should_terminate_threads;
 
 void send_goodbye_msg(void);
-void send_discovery_msg(int sockfd, struct sockaddr_in*addr, socklen_t len, char mac_address[18]);
-void* listen_discovery(void* args);
+void send_discovery_msg(int sockfd, struct sockaddr_in *addr, socklen_t len, char mac_address[18]);
+void *listen_discovery(void *args);
 void participant_start();
-void get_mac_address(char* mac_address);
+void get_mac_address(char *mac_address);
 void *listen_Confirmed(void *args);
 void send_confirmed_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16]);
+void insert_manager_into_participants_table();
+char *get_local_ip_address();
 #endif
