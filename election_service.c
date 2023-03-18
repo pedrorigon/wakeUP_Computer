@@ -14,6 +14,7 @@
 
 uint64_t participant_id;
 uint64_t current_manager_id;
+int election_in_progress;
 
 uint64_t generate_unique_id()
 {
@@ -39,6 +40,8 @@ void initialize_participant_id()
 // Função que inicia a eleição
 int start_election()
 {
+    election_in_progress = 1; // Adicione esta linha
+
     int became_leader = 0;
 
     for (int i = 0; i < num_participants; i++)
@@ -58,10 +61,10 @@ int start_election()
     {
         announce_victory();
         update_manager(participant_id);
-        // current_manager_id = 1;
         became_leader = 1;
     }
 
+    election_in_progress = 0; // Adicione esta linha antes de retornar
     return became_leader;
 }
 
@@ -199,18 +202,22 @@ void *election_listener(void *arg)
 
         if (msg.type == ELECTION_TYPE)
         {
-            printf("Mensagem de eleição recebida de %s\n", participants[sender_index].hostname);
+            // Adicione esta condição
+            if (!election_in_progress)
+            {
+                printf("Mensagem de eleição recebida de %s\n", participants[sender_index].hostname);
 
-            char sender_mac_address[18];
-            strcpy(sender_mac_address, participants[sender_index].mac_address);
+                char sender_mac_address[18];
+                strcpy(sender_mac_address, participants[sender_index].mac_address);
 
-            char sender_ip_address[16];
-            strcpy(sender_ip_address, participants[sender_index].ip_address);
+                char sender_ip_address[16];
+                strcpy(sender_ip_address, participants[sender_index].ip_address);
 
-            char sender_hostname[256];
-            strcpy(sender_hostname, participants[sender_index].hostname);
+                char sender_hostname[256];
+                strcpy(sender_hostname, participants[sender_index].hostname);
 
-            respond_election(sender_mac_address, sender_ip_address, sender_hostname, VICTORY_TYPE);
+                respond_election(sender_mac_address, sender_ip_address, sender_hostname, VICTORY_TYPE);
+            }
         }
         else if (msg.type == VICTORY_TYPE)
         {
