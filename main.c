@@ -26,6 +26,13 @@ int main()
 {
     initialize_participant_id();
     pthread_t send_election_active_tid, election_active_listener_tid;
+    pthread_t election_listener_thread;
+
+    int rc = pthread_create(&election_listener_thread, NULL, election_listener, NULL);
+    if (rc)
+    {
+        printf("Error creating election_listener thread\n");
+    }
 
     if (pthread_create(&send_election_active_tid, NULL, send_election_active_thread, NULL) != 0)
     {
@@ -108,13 +115,13 @@ void start_manager_threads()
 void start_participant_threads()
 {
 
-    int rc = pthread_create(&election_listener_thread, NULL, election_listener, NULL);
-    if (rc)
-    {
-        printf("Error creating election_listener thread\n");
-    }
+    // int rc = pthread_create(&election_listener_thread, NULL, election_listener, NULL);
+    // if (rc)
+    //{
+    //     printf("Error creating election_listener thread\n");
+    // }
 
-    rc = pthread_create(&monitor_manager_status_thread, NULL, monitor_manager_status, NULL);
+    int rc = pthread_create(&monitor_manager_status_thread, NULL, monitor_manager_status, NULL);
     if (rc)
     {
         printf("Error creating monitor_manager_status thread\n");

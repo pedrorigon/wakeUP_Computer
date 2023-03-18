@@ -11,6 +11,7 @@
 #include "discovery_service.h"
 #include "monitoring_service.h"
 #include "structs.h"
+#include <fcntl.h>
 
 uint64_t participant_id;
 uint64_t current_manager_id;
@@ -40,9 +41,9 @@ void initialize_participant_id()
 // Função que inicia a eleição
 int start_election()
 {
-    election_in_progress = 1; // Adicione esta linha
-
+    election_in_progress = 1;
     int became_leader = 0;
+    int num_responses = 0;
 
     for (int i = 0; i < num_participants; i++)
     {
@@ -54,17 +55,36 @@ int start_election()
     }
 
     // Aguarde respostas de outros processos
-    int response_timeout = RESPONSE_TIMEOUT; // Defina um limite de tempo adequado
-    int responses_received = wait_for_responses(response_timeout);
+    int response_timeout = RESPONSE_TIMEOUT;
+    num_responses = wait_for_responses(response_timeout);
 
-    if (responses_received == 0)
+    if (num_responses == 0)
     {
         announce_victory();
-        update_manager(participant_id);
-        became_leader = 1;
+
+        // Aguarde confirmações de todos os outros processos por um tempo limitado
+        int confirmations_received = 0;
+        time_t start_time = time(NULL);
+        while (difftime(time(NULL), start_time) < RESPONSE_TIMEOUT)
+        {
+            confirmations_received = wait_for_confirmations(RESPONSE_TIMEOUT);
+
+            if (confirmations_received == num_participants - 1)
+            {
+                update_manager(participant_id);
+                became_leader = 1;
+                break;
+            }
+        }
+
+        if (!became_leader)
+        {
+            update_manager(participant_id);
+            became_leader = 1;
+        }
     }
 
-    election_in_progress = 0; // Adicione esta linha antes de retornar
+    election_in_progress = 0;
     return became_leader;
 }
 
@@ -74,16 +94,34 @@ int wait_for_responses(int response_timeout)
     time_t start_time = time(NULL);
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
+    // Definir a estrutura sockaddr_in para ouvir na porta específica
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(RESPONSE_PORT);
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    // Vincular o socket à porta específica
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("bind");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configurar o socket para ser não bloqueante
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+
     while (difftime(time(NULL), start_time) < response_timeout)
     {
         packet msg;
         struct sockaddr_in cli_addr;
         socklen_t clilen = sizeof(cli_addr);
 
-        int n = recvfrom(sockfd, &msg, sizeof(msg), MSG_DONTWAIT, (struct sockaddr *)&cli_addr, &clilen);
+        int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
         if (n > 0)
         {
-            if (msg.type == ELECTION_RESPONSE_TYPE)
+            if (msg.type == VICTORY_TYPE)
             {
                 responses_received++;
             }
@@ -92,6 +130,7 @@ int wait_for_responses(int response_timeout)
         usleep(100000); // Espera 100ms antes de verificar novamente
     }
 
+    close(sockfd);
     return responses_received;
 }
 
@@ -138,13 +177,56 @@ void announce_victory()
     {
         if (participants[i].unique_id != participant_id)
         {
-            // Envie uma mensagem de resposta de eleição para todos os outros processos
-            respond_election(participants[i].mac_address, participants[i].ip_address, participants[i].hostname, ELECTION_RESPONSE_TYPE);
+            // Envie uma mensagem de confirmação de liderança para todos os outros processos
+            respond_election(participants[i].mac_address, participants[i].ip_address, participants[i].hostname, CONFIRMATION_ELECTION_TYPE);
         }
     }
-    update_manager(participant_id);
-    // Chame a função become_manager() para iniciar as threads do manager
-    // become_manager();
+}
+
+int wait_for_confirmations(int response_timeout)
+{
+    int confirmations_received = 0;
+    time_t start_time = time(NULL);
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    // Definir a estrutura sockaddr_in para ouvir na porta específica
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(RESPONSE_PORT);
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    // Vincular o socket à porta específica
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("bind");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configurar o socket para ser não bloqueante
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+
+    while (difftime(time(NULL), start_time) < response_timeout)
+    {
+        packet msg;
+        struct sockaddr_in cli_addr;
+        socklen_t clilen = sizeof(cli_addr);
+
+        int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
+        if (n > 0)
+        {
+            if (msg.type == CONFIRMATION_ELECTION_TYPE)
+            {
+                confirmations_received++;
+            }
+        }
+
+        usleep(100000); // Espera 100ms antes de verificar novamente
+    }
+
+    close(sockfd);
+    return confirmations_received;
 }
 
 void *election_listener(void *arg)
@@ -200,9 +282,14 @@ void *election_listener(void *arg)
             continue;
         }
 
+        // Verifique se a mensagem é do próprio processo
+        if (participants[sender_index].unique_id == participant_id)
+        {
+            continue;
+        }
+
         if (msg.type == ELECTION_TYPE)
         {
-            // Adicione esta condição
             if (!election_in_progress)
             {
                 printf("Mensagem de eleição recebida de %s\n", participants[sender_index].hostname);
@@ -221,8 +308,18 @@ void *election_listener(void *arg)
         }
         else if (msg.type == VICTORY_TYPE)
         {
-            printf("Mensagem de vitória recebida de %s\n", participants[sender_index].hostname);
-            update_manager(participants[sender_index].unique_id);
+            if (participants[sender_index].unique_id > participant_id)
+            {
+                printf("Mensagem de vitória recebida de %s\n", participants[sender_index].hostname);
+                update_manager(participants[sender_index].unique_id);
+
+                // Adicione o código para enviar uma mensagem de confirmação
+                respond_election(participants[sender_index].mac_address, participants[sender_index].ip_address, participants[sender_index].hostname, CONFIRMATION_ELECTION_TYPE);
+            }
+            else
+            {
+                printf("Ignorando mensagem de vitória de %s (ID menor ou igual)\n", participants[sender_index].hostname);
+            }
         }
     }
     close(sockfd);
@@ -246,7 +343,7 @@ void send_election_message(participant receiver)
 
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(RESPONSE_PORT_ELECTION);
+    serv_addr.sin_port = htons(PORT_ELECTION);
 
     if (inet_aton(receiver.ip_address, &serv_addr.sin_addr) == 0)
     {
@@ -255,7 +352,7 @@ void send_election_message(participant receiver)
     }
 
     packet msg;
-    msg.type = ELECTION_TYPE; // Modifique o tipo de mensagem aqui
+    msg.type = ELECTION_TYPE;
     memcpy(msg.mac_address, receiver.mac_address, 18);
     msg.status = receiver.status;
     msg._payload = NULL;
