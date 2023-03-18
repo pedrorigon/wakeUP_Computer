@@ -134,39 +134,15 @@ void announce_victory()
     for (int i = 0; i < num_participants; i++)
     {
         if (participants[i].unique_id != participant_id)
-
         {
-            // Envie uma mensagem de vitória para todos os outros processos
-            respond_election(participants[i].mac_address, participants[i].ip_address, participants[i].hostname, VICTORY_TYPE);
+            // Envie uma mensagem de resposta de eleição para todos os outros processos
+            respond_election(participants[i].mac_address, participants[i].ip_address, participants[i].hostname, ELECTION_RESPONSE_TYPE);
         }
     }
 
     // Chame a função become_manager() para iniciar as threads do manager
     // become_manager();
 }
-/*
-// Função que atualiza o manager atual com base em uma mensagem de vitória
-void update_manager(uint64_t new_manager_id)
-{
-    for (int i = 0; i < num_participants; i++)
-    {
-        if (participants[i].unique_id == new_manager_id)
-        {
-            // Atualize o manager atual com base na mensagem de vitória recebida
-            participants[i].is_manager = 1;
-            // current_manager_id = new_manager_id;
-            current_manager_id = 3;
-            break;
-        }
-    }
-}
-*/
-/*pthread_t election_listener_thread;
-int rc = pthread_create(&election_listener_thread, NULL, election_listener, NULL);
-if (rc) {
-    printf("Error creating election_listener thread\n");
-}
-*/
 
 void *election_listener(void *arg)
 {
