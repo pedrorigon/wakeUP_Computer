@@ -25,6 +25,19 @@ int should_terminate_threads = 0;
 int main()
 {
     initialize_participant_id();
+    pthread_t send_election_active_tid, election_active_listener_tid;
+
+    if (pthread_create(&send_election_active_tid, NULL, send_election_active_thread, NULL) != 0)
+    {
+        printf("Erro ao criar a thread send_election_active_thread.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_create(&election_active_listener_tid, NULL, election_active_listener, NULL) != 0)
+    {
+        printf("Erro ao criar a thread election_active_listener.\n");
+        exit(EXIT_FAILURE);
+    }
     int manager = participant_decision();
 
     signal(SIGTERM, sig_handler);

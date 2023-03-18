@@ -31,5 +31,8 @@ void send_election_message(participant receiver);
 int participant_decision();
 void *listen_manager_check(void *args);
 void check_for_manager(int *found_manager);
+void *send_election_active_thread(void *arg);
+void send_election_active_message();
+void *election_active_listener(void *arg);
 
 #endif

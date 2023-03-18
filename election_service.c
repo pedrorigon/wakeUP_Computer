@@ -291,6 +291,16 @@ void check_for_manager(int *found_manager)
         return;
     }
 
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+    {
+        printf("Erro ao configurar o timeout do socket.\n");
+        *found_manager = 0; // não encontrou nenhum manager
+        return;
+    }
+
     packet msg;
     memset(&msg, 0, sizeof(msg));
     msg.type = MANAGER_CHECK_TYPE;
@@ -306,27 +316,19 @@ void check_for_manager(int *found_manager)
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
     packet response;
-    time_t start_time = time(NULL);
 
-    while (difftime(time(NULL), start_time) < 5)
+    memset(&response, 0, sizeof(response));
+    n = recvfrom(sockfd, &response, sizeof(response), 0, (struct sockaddr *)&cli_addr, &clilen);
+    if (n > 0 && response.type == MANAGER_RESPONSE_CHECK_TYPE)
     {
-        memset(&response, 0, sizeof(response));
-        int n = recvfrom(sockfd, &response, sizeof(response), MSG_DONTWAIT, (struct sockaddr *)&cli_addr, &clilen);
-        if (n > 0 && response.type == MANAGER_RESPONSE_CHECK_TYPE)
-        {
-            printf("Manager encontrado!.\n");
-            *found_manager = 1; // encontrou um manager
-            close(sockfd);
-            return;
-        }
-
-        usleep(100000); // espera 100ms antes de verificar novamente
+        printf("Manager encontrado!.\n");
+        *found_manager = 1; // encontrou um manager
+    }
+    else
+    {
+        *found_manager = 0; // não encontrou nenhum manager
     }
 
-    // se ninguém respondeu, iniciar uma eleição
-    printf("Nenhum manager encontrado. Iniciando eleição...\n");
-    *found_manager = 0; // não encontrou nenhum manager
-    start_election();
     close(sockfd);
 }
 
@@ -385,13 +387,157 @@ void *listen_manager_check(void *args)
 int participant_decision()
 {
     int found_manager = 0;
+
     check_for_manager(&found_manager);
-    if (found_manager == 0)
+
+    if (!found_manager)
     {
-        printf("Manager não encontrado, iniciando eleição.\n");
-        start_election(); // inicia uma eleição
-        return 1;         // retorna 0 para indicar que o processo será iniciado como gerenciador
+        printf("Manager não encontrado, verificando se há uma eleição em andamento.\n");
+
+        if (election_in_progress == 0)
+        {
+            printf("Nenhuma eleição em andamento, iniciando eleição.\n");
+            // send_election_active_message(); // Adicione esta chamada aqui
+            printf("participant_id2: %lu \n", participant_id);
+            int became_manager = start_election(); // inicia uma eleição
+
+            if (became_manager)
+            {
+                return 1; // retorna 1 para indicar que o processo será iniciado como manager
+            }
+        }
+        else
+        {
+            printf("Eleição em andamento, aguardando resultado.\n");
+            while (election_in_progress)
+            {
+                // Aguarda o fim da eleição
+                sleep(1); // Aguarda 1 segundo antes de verificar novamente
+
+                // Verifique se a eleição terminou e atualize election_in_progress
+                // se necessário, usando uma função adequada (por exemplo, check_election_status()).
+                // check_election_status(&election_in_progress);
+            }
+
+            // Verifique novamente se há um gerente após a eleição
+            check_for_manager(&found_manager);
+            if (found_manager)
+            {
+                printf("Manager encontrado após a eleição, iniciando como participante.\n");
+                return 0; // retorna 0 para indicar que o processo será iniciado como participante
+            }
+        }
     }
-    printf("Manager encontrado, iniciando como participante.\n");
-    return 0; // retorna 1 para indicar que o processo será iniciado como participante
+    else
+    {
+        printf("Manager encontrado, iniciando como participante.\n");
+        return 0; // retorna 0 para indicar que o processo será iniciado como participante
+    }
+
+    return 0; // retorna 0 para indicar que o processo será iniciado como participante
+}
+
+void *send_election_active_thread(void *arg)
+{
+    while (1)
+    {
+        if (election_in_progress)
+        {
+            send_election_active_message();
+        }
+        else
+        {
+            // Aguarda a eleição começar novamente
+            while (!election_in_progress)
+            {
+                sleep(1); // Aguarda 1 segundo antes de verificar novamente
+            }
+        }
+    }
+}
+void send_election_active_message()
+{
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    int broadcast_permission = 1; // Adicione esta linha
+
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Adicione esta parte para habilitar a opção SO_BROADCAST no socket
+    if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, (void *)&broadcast_permission, sizeof(broadcast_permission)) < 0)
+    {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(ELECTION_ACTIVE_PORT);
+    serv_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+
+    packet msg;
+    msg.type = ELECTION_ACTIVE_TYPE;
+    printf("participant_id: %lu \n", participant_id);
+    // memcpy(&msg.mac_address, &participant_id, sizeof(uint64_t));
+
+    if (sendto(sockfd, (const void *)&msg, sizeof(msg), 0, (const struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("sendto");
+        exit(EXIT_FAILURE);
+    }
+
+    close(sockfd);
+}
+
+void *election_active_listener(void *arg)
+{
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    socklen_t manlen = sizeof(serv_addr);
+    packet msg;
+
+    // Create socket
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+        printf("Error opening socket");
+        pthread_exit(NULL);
+    }
+
+    // Bind socket to address and port
+    memset((char *)&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(ELECTION_ACTIVE_PORT);
+
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("Error on binding");
+        pthread_exit(NULL);
+    }
+
+    while (!should_terminate_threads)
+    {
+        struct sockaddr_in cli_addr;
+        socklen_t clilen = sizeof(cli_addr);
+        election_in_progress = 0;
+        // Receive message
+        int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
+        if (n < 0)
+        {
+            printf("Error on recvfrom");
+            pthread_exit(NULL);
+        }
+
+        if (msg.type == ELECTION_ACTIVE_TYPE)
+        {
+            printf("Mensagem de eleição ativa recebida.\n");
+            election_in_progress = 1;
+        }
+    }
+    close(sockfd);
+    pthread_exit(NULL);
 }
