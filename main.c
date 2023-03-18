@@ -30,8 +30,6 @@ int main()
     signal(SIGTERM, sig_handler);
     signal(SIGINT, sig_handler);
 
-    manager = get_manager_by_participant_id(participant_id);
-
     if (manager == 1)
     {
         start_manager_threads();
