@@ -60,6 +60,8 @@ void arte_inicial(void)
 
 void print_participants()
 {
+    printf(BWHT "    MANAGER: %lu\n", current_manager_id);
+    printf(BWHT "    MeuID: %lu\n", participant_id);
     printf(BHWHT " LISTA DE PARTICIPANTES: \n\n" reset);
     printf(" ------------------------------------------------\n\n");
     for (int i = 0; i < num_participants; i++)
