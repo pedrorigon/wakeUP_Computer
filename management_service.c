@@ -149,24 +149,40 @@ int find_participant_by_hostname(char *hostname)
     return -1;
 }
 
+int get_manager_by_participant_id(uint64_t participant_id)
+{
+    int manager = -1; // Inicialize a variável manager com um valor inválido
+
+    pthread_mutex_lock(&participants_table_lock);
+    for (int i = 0; i < num_participants; i++)
+    {
+        if (participants[i].unique_id == participant_id)
+        {
+            manager = participants[i].is_manager;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&participants_table_lock);
+
+    return manager;
+}
+
 void update_manager(uint64_t new_manager_id)
 {
-    pthread_mutex_lock(&participants_mutex);
+    pthread_mutex_lock(&participants_table_lock);
     current_manager_id = new_manager_id;
     for (int i = 0; i < num_participants; i++)
     {
         if (participants[i].unique_id == new_manager_id)
         {
-            // Atualize o manager atual com base na mensagem de vitória recebida
             participants[i].is_manager = 1;
         }
         else
         {
-            // Defina o status de is_manager como 0 para todos os outros participantes
             participants[i].is_manager = 0;
         }
     }
-    pthread_mutex_unlock(&participants_mutex);
+    pthread_mutex_unlock(&participants_table_lock);
 }
 
 int get_participant_status(char *mac_address)
