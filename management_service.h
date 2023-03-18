@@ -15,7 +15,6 @@
 
 int add_participant(char *hostname, char *ip_address, char *mac_address, int status, int time_control);
 void remove_participant(char *mac_address);
-// void remove_participants(char **mac_addresses, int num_macs);
 void update_manager(uint64_t new_manager_id);
 void update_participant_status(char *mac_address, int status);
 int find_participant(char *mac_address);

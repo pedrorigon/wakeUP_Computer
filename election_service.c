@@ -84,19 +84,6 @@ int wait_for_responses(int response_timeout)
             {
                 responses_received++;
             }
-            else if (msg.type == VICTORY_TYPE)
-            {
-                responses_received++;
-                printf("Mensagem de vitória recebida durante a eleição\n");
-                int participant_index = find_participant(msg.mac_address);
-                if (participant_index != -1)
-                {
-                    update_manager(participants[participant_index].unique_id);
-                }
-
-                announce_victory();
-                return responses_received;
-            }
         }
 
         usleep(100000); // Espera 100ms antes de verificar novamente
@@ -285,7 +272,7 @@ void send_election_message(participant receiver)
     }
 
     packet msg;
-    msg.type = VICTORY_TYPE;
+    msg.type = ELECTION_TYPE; // Modifique o tipo de mensagem aqui
     memcpy(msg.mac_address, receiver.mac_address, 18);
     msg.status = receiver.status;
     msg._payload = NULL;
