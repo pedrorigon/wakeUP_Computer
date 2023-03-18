@@ -25,7 +25,7 @@ int should_terminate_threads = 0;
 int main()
 {
     initialize_participant_id();
-    int manager = start_election();
+    int manager = participant_decision();
 
     signal(SIGTERM, sig_handler);
     signal(SIGINT, sig_handler);
@@ -56,11 +56,17 @@ void start_manager_threads()
     pthread_t discovery_thread;
     pthread_t monitoring_thread;
     pthread_t monitoring_confirmed_thread;
+    pthread_t manager_check_thread;
 
     int rc = pthread_create(&discovery_thread, NULL, listen_discovery, NULL);
     if (rc)
     {
         printf("Error creating listen_discovery thread\n");
+    }
+    rc = pthread_create(&manager_check_thread, NULL, listen_manager_check, NULL); // inicia a thread para ouvir as solicitações de verificação do status do gerenciador
+    if (rc)
+    {
+        printf("Error creating manager_check thread\n");
     }
     rc = pthread_create(&monitoring_thread, NULL, manager_start_monitoring_service, NULL);
     if (rc)

@@ -28,5 +28,8 @@ void update_manager(uint64_t new_manager_id);
 void *election_listener(void *arg);
 void become_manager();
 void send_election_message(participant receiver);
+int participant_decision();
+void *listen_manager_check(void *args);
+void check_for_manager(int *found_manager);
 
 #endif

@@ -264,3 +264,134 @@ void send_election_message(participant receiver)
     sendto(sockfd, (const void *)&msg, sizeof(msg), 0, (const struct sockaddr *)&serv_addr, sizeof(serv_addr));
     close(sockfd);
 }
+
+void check_for_manager(int *found_manager)
+{
+    printf("Procurando por um manager...\n");
+
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0)
+    {
+        printf("Erro ao criar o socket.\n");
+        *found_manager = 0; // não encontrou nenhum manager
+        return;
+    }
+
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(CHECK_MANAGER_PORT);
+    serv_addr.sin_addr.s_addr = INADDR_BROADCAST;
+
+    int broadcast_permission = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast_permission, sizeof(broadcast_permission)) < 0)
+    {
+        printf("Erro ao configurar o socket para broadcast.\n");
+        *found_manager = 0; // não encontrou nenhum manager
+        return;
+    }
+
+    packet msg;
+    memset(&msg, 0, sizeof(msg));
+    msg.type = MANAGER_CHECK_TYPE;
+
+    int n = sendto(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    if (n < 0)
+    {
+        printf("Erro ao enviar mensagem.\n");
+        *found_manager = 0; // não encontrou nenhum manager
+        return;
+    }
+
+    struct sockaddr_in cli_addr;
+    socklen_t clilen = sizeof(cli_addr);
+    packet response;
+    time_t start_time = time(NULL);
+
+    while (difftime(time(NULL), start_time) < 5)
+    {
+        memset(&response, 0, sizeof(response));
+        int n = recvfrom(sockfd, &response, sizeof(response), MSG_DONTWAIT, (struct sockaddr *)&cli_addr, &clilen);
+        if (n > 0 && response.type == MANAGER_RESPONSE_CHECK_TYPE)
+        {
+            printf("Manager encontrado!.\n");
+            *found_manager = 1; // encontrou um manager
+            close(sockfd);
+            return;
+        }
+
+        usleep(100000); // espera 100ms antes de verificar novamente
+    }
+
+    // se ninguém respondeu, iniciar uma eleição
+    printf("Nenhum manager encontrado. Iniciando eleição...\n");
+    *found_manager = 0; // não encontrou nenhum manager
+    start_election();
+    close(sockfd);
+}
+
+void *listen_manager_check(void *args)
+{
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    socklen_t manlen = sizeof(serv_addr);
+    packet msg;
+
+    // Create socket
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+        printf("Error opening socket");
+        pthread_exit(NULL);
+    }
+
+    // Bind socket to address and port
+    memset((char *)&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(CHECK_MANAGER_PORT);
+
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("Error on binding");
+        pthread_exit(NULL);
+    }
+
+    while (!should_terminate_threads) // Modifique o loop para verificar a variável should_terminate_threads
+    {
+        struct sockaddr_in cli_addr;
+        socklen_t clilen = sizeof(cli_addr);
+
+        // Receive message
+        int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
+        if (n < 0)
+        {
+            printf("Error on recvfrom");
+            continue;
+        }
+
+        if (msg.type == MANAGER_CHECK_TYPE)
+        {
+            // This is a manager check request, so respond with our status
+            packet response;
+            response.type = MANAGER_RESPONSE_CHECK_TYPE;
+            // Send response
+            sendto(sockfd, &response, sizeof(response), 0, (struct sockaddr *)&cli_addr, clilen);
+        }
+    }
+
+    pthread_exit(NULL);
+}
+
+int participant_decision()
+{
+    int found_manager = 0;
+    check_for_manager(&found_manager);
+    if (found_manager == 0)
+    {
+        printf("Manager não encontrado, iniciando eleição.\n");
+        start_election(); // inicia uma eleição
+        return 1;         // retorna 0 para indicar que o processo será iniciado como gerenciador
+    }
+    printf("Manager encontrado, iniciando como participante.\n");
+    return 0; // retorna 1 para indicar que o processo será iniciado como participante
+}
