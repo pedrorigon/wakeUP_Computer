@@ -159,8 +159,11 @@ void update_manager(uint64_t new_manager_id)
         {
             // Atualize o manager atual com base na mensagem de vitória recebida
             participants[i].is_manager = 1;
-            // current_manager_id = new_manager_id;
-            break;
+        }
+        else
+        {
+            // Defina o status de is_manager como 0 para todos os outros participantes
+            participants[i].is_manager = 0;
         }
     }
     pthread_mutex_unlock(&participants_mutex);

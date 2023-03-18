@@ -139,7 +139,7 @@ void announce_victory()
             respond_election(participants[i].mac_address, participants[i].ip_address, participants[i].hostname, ELECTION_RESPONSE_TYPE);
         }
     }
-
+    update_manager(participant_id);
     // Chame a função become_manager() para iniciar as threads do manager
     // become_manager();
 }
