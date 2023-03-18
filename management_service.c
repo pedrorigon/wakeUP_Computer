@@ -153,7 +153,7 @@ int get_manager_by_participant_id(uint64_t participant_id)
 {
     int manager = -1; // Inicialize a variável manager com um valor inválido
 
-    pthread_mutex_lock(&participants_table_lock);
+    pthread_mutex_lock(&participants_mutex);
     for (int i = 0; i < num_participants; i++)
     {
         if (participants[i].unique_id == participant_id)
@@ -162,14 +162,14 @@ int get_manager_by_participant_id(uint64_t participant_id)
             break;
         }
     }
-    pthread_mutex_unlock(&participants_table_lock);
+    pthread_mutex_unlock(&participants_mutex);
 
     return manager;
 }
 
 void update_manager(uint64_t new_manager_id)
 {
-    pthread_mutex_lock(&participants_table_lock);
+    pthread_mutex_lock(&participants_mutex);
     current_manager_id = new_manager_id;
     for (int i = 0; i < num_participants; i++)
     {
@@ -182,89 +182,88 @@ void update_manager(uint64_t new_manager_id)
             participants[i].is_manager = 0;
         }
     }
-    pthread_mutex_unlock(&participants_table_lock);
-}
-
-int get_participant_status(char *mac_address)
-{
-    pthread_mutex_lock(&participants_mutex);
-    int status = -1;
-    int index = find_participant(mac_address);
-    if (index != -1)
-    {
-        status = participants[index].status;
-    }
-    else
-    {
-        printf("Error: Participant not found in table.\n");
-    }
     pthread_mutex_unlock(&participants_mutex);
-    return status;
-}
 
-int find_participant_by_unique_id(uint64_t unique_id)
-{
-    pthread_mutex_lock(&participants_mutex);
-    int index = -1;
-    for (int i = 0; i < num_participants; i++)
-    {
-        if (participants[i].unique_id == unique_id)
-        {
-            index = i;
-            break;
-        }
-    }
-    pthread_mutex_unlock(&participants_mutex);
-    return index;
-}
-
-int get_manager_status()
-{
-    int status = -1;
-    pthread_mutex_lock(&participants_mutex);
-    int index = find_participant_by_unique_id(current_manager_id);
-    if (index != -1)
-    {
-        status = participants[index].status;
-    }
-    else
-    {
-        printf("Error: Manager not found in table.\n");
-    }
-    pthread_mutex_unlock(&participants_mutex);
-    return status;
-}
-
-void check_asleep_participant()
-{
-
-    if (num_participants > 0)
+    int get_participant_status(char *mac_address)
     {
         pthread_mutex_lock(&participants_mutex);
-        int remove_indices[num_participants];
-        int remove_count = 0;
+        int status = -1;
+        int index = find_participant(mac_address);
+        if (index != -1)
+        {
+            status = participants[index].status;
+        }
+        else
+        {
+            printf("Error: Participant not found in table.\n");
+        }
+        pthread_mutex_unlock(&participants_mutex);
+        return status;
+    }
+
+    int find_participant_by_unique_id(uint64_t unique_id)
+    {
+        pthread_mutex_lock(&participants_mutex);
+        int index = -1;
         for (int i = 0; i < num_participants; i++)
         {
-            if (participants[i].unique_id != participant_id)
+            if (participants[i].unique_id == unique_id)
             {
-                // printf("\n%d\n", participants[i].time_control);
-                if (participants[i].time_control > 0)
-                {
-                    participants[i].time_control--;
-                }
-                else
-                {
-                    remove_indices[remove_count++] = i;
-                }
+                index = i;
+                break;
             }
         }
         pthread_mutex_unlock(&participants_mutex);
-
-        for (int i = 0; i < remove_count; i++)
-        {
-            participants[remove_indices[i]].status = STATUS_ASLEEP;
-        }
-
-        sem_post(&sem_update_interface);
+        return index;
     }
-}
+
+    int get_manager_status()
+    {
+        int status = -1;
+        pthread_mutex_lock(&participants_mutex);
+        int index = find_participant_by_unique_id(current_manager_id);
+        if (index != -1)
+        {
+            status = participants[index].status;
+        }
+        else
+        {
+            printf("Error: Manager not found in table.\n");
+        }
+        pthread_mutex_unlock(&participants_mutex);
+        return status;
+    }
+
+    void check_asleep_participant()
+    {
+
+        if (num_participants > 0)
+        {
+            pthread_mutex_lock(&participants_mutex);
+            int remove_indices[num_participants];
+            int remove_count = 0;
+            for (int i = 0; i < num_participants; i++)
+            {
+                if (participants[i].unique_id != participant_id)
+                {
+                    // printf("\n%d\n", participants[i].time_control);
+                    if (participants[i].time_control > 0)
+                    {
+                        participants[i].time_control--;
+                    }
+                    else
+                    {
+                        remove_indices[remove_count++] = i;
+                    }
+                }
+            }
+            pthread_mutex_unlock(&participants_mutex);
+
+            for (int i = 0; i < remove_count; i++)
+            {
+                participants[remove_indices[i]].status = STATUS_ASLEEP;
+            }
+
+            sem_post(&sem_update_interface);
+        }
+    }
