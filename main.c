@@ -137,11 +137,11 @@ void start_manager_threads()
 void start_participant_threads()
 {
 
-    // int rc = pthread_create(&election_listener_thread, NULL, election_listener, NULL);
-    // if (rc)
-    //{
-    //     printf("Error creating election_listener thread\n");
-    // }
+    int rc = pthread_create(&election_listener_thread, NULL, election_listener, NULL);
+    if (rc)
+    {
+        printf("Error creating election_listener thread\n");
+    }
 
     int rc = pthread_create(&confirmed_thread, NULL, listen_Confirmed, NULL);
     if (rc)
