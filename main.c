@@ -87,6 +87,8 @@ void start_manager_threads()
     pthread_t monitoring_thread;
     pthread_t monitoring_confirmed_thread;
     pthread_t manager_check_thread;
+    pthread_t listen_duplicate_manager_thread;
+    pthread_t send_duplicate_manager_thread;
 
     int rc = pthread_create(&discovery_thread, NULL, listen_discovery, NULL);
     if (rc)
@@ -117,6 +119,15 @@ void start_manager_threads()
     if (rc)
     {
         printf("Error creating user_interface thread\n");
+    }
+    if (pthread_create(&listen_duplicate_manager_thread, NULL, listen_duplicate_manager_messages, NULL) != 0)
+    {
+        printf("Error creating listen_duplicate_manager_messages thread");
+    }
+
+    if (pthread_create(&send_duplicate_manager_thread, NULL, send_duplicate_manager_messages, NULL) != 0)
+    {
+        printf("Error creating send_duplicate_manager_messages thread");
     }
 
     pthread_join(discovery_thread, NULL);

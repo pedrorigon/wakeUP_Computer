@@ -37,5 +37,7 @@ void *send_election_active_thread(void *arg);
 void send_election_active_message();
 void *election_active_listener(void *arg);
 int wait_for_confirmations(int response_timeout);
-
+void *send_duplicate_manager_messages(void *arg);
+void *listen_duplicate_manager_messages(void *arg);
+void restart_program();
 #endif

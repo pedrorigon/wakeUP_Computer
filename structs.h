@@ -23,14 +23,11 @@ typedef struct __packet
     int status;
     const char *_payload; // Dados da mensagem
     int time_control;
+    uint64_t id_unique;
     uint64_t election_id;
 } packet;
 
-typedef struct
-{
-    unsigned long unique_id;
-} TemporaryParticipant;
-
+#define MAX_ARGC 2
 #define PORT 4000
 #define RESPONSE_PORT 4001
 #define PORT_MONITORING 4002
@@ -41,6 +38,7 @@ typedef struct
 #define RESPONSE_PORT_CHECK 4006
 #define ELECTION_ACTIVE_PORT 4008
 #define ELECTION_AFTER_SLEEP_PORT 4009
+#define MANAGER_DUPLICATE_PORT 4010
 
 #define DISCOVERY_TYPE 1
 #define CONFIRMED_TYPE 2
@@ -56,6 +54,7 @@ typedef struct
 #define CONFIRMATION_ELECTION_TYPE 12
 #define ELECTION_AFTER_SLEEP 13
 #define ELECTION_AFTER_CONFIRMATION 14
+#define MANAGER_DUPLICATE_TYPE 15
 
 #define RESPONSE_TIMEOUT 5
 #define STATUS_ASLEEP 0

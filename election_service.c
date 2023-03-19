@@ -663,148 +663,130 @@ void *election_active_listener(void *arg)
     close(sockfd);
     pthread_exit(NULL);
 }
-/*
-int start_election_after_sleep()
+
+void *send_duplicate_manager_messages(void *arg)
 {
-    election_in_progress = 1;
-    printf("está rolando eleição: %d.\n", election_in_progress);
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    socklen_t servlen = sizeof(serv_addr);
+    packet msg;
 
-    int became_leader = 0;
-    int num_responses = 0;
-    uint64_t max_id = participant_id;
+    msg.type = MANAGER_DUPLICATE_TYPE;
+    msg.id_unique = participant_id;
 
-    // Envia mensagem de eleição para processos com ID maior
-    for (int i = 0; i < num_participants; i++)
+    // Create socket
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
     {
-        if (participants[i].unique_id > participant_id)
-        {
-            send_election_message_after_sleep(participants[i]);
-        }
-        else if (participants[i].unique_id < participant_id && participants[i].status == PARTICIPANT_ALIVE)
-        {
-            send_confirmation_message(participants[i]);
-        }
+        printf("Error opening socket");
+        pthread_exit(NULL);
     }
 
-    // Aguarda respostas de outros processos
-    int response_timeout = RESPONSE_TIMEOUT;
-    time_t start_time = time(NULL);
-    while (difftime(time(NULL), start_time) < response_timeout)
-    {
-        packet msg;
-        struct sockaddr_in cli_addr;
-        socklen_t clilen = sizeof(cli_addr);
+    // Set up destination address
+    memset((char *)&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+    serv_addr.sin_port = htons(MANAGER_DUPLICATE_PORT);
 
+    // Enable broadcast
+    int broadcast = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)) == -1)
+    {
+        printf("Error enabling broadcast");
+        pthread_exit(NULL);
+    }
+
+    while (!should_terminate_threads)
+    {
+        // Send message
+        if (sendto(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&serv_addr, servlen) == -1)
+        {
+            printf("Error sending message");
+            pthread_exit(NULL);
+        }
+
+        sleep(2); // Wait for 2 seconds before sending the next message
+    }
+
+    close(sockfd);
+    pthread_exit(NULL);
+}
+
+void *listen_duplicate_manager_messages(void *arg)
+{
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    socklen_t clilen;
+    packet msg;
+
+    // Create socket
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+        printf("Error opening socket");
+        pthread_exit(NULL);
+    }
+
+    // Bind socket to address and port
+    memset((char *)&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(MANAGER_DUPLICATE_PORT);
+
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("Error on binding");
+        pthread_exit(NULL);
+    }
+
+    while (!should_terminate_threads)
+    {
+        struct sockaddr_in cli_addr;
+        clilen = sizeof(cli_addr);
+
+        // Receive message
         int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
         if (n < 0)
         {
-            printf("Error on recvfrom\n");
-            continue;
+            printf("Error on recvfrom");
+            pthread_exit(NULL);
         }
 
-        if (msg.type == ELECTION_AFTER_SLEEP)
+        if (msg.type == MANAGER_DUPLICATE_TYPE)
         {
-            printf("Mensagem de eleição recebida de %lu.\n", msg.unique_id);
-            int index = find_participant_by_id(msg.unique_id);
-            if (index >= 0 && participants[index].status == PARTICIPANT_ALIVE)
+            printf("Mensagem de gerente duplicado recebida.\n");
+
+            // Compare participant IDs
+            if (participant_id >= msg.id_unique)
             {
-                if (msg.unique_id > max_id)
-                {
-                    max_id = msg.unique_id;
-                }
-                send_confirmation_message(participants[index]);
+                // This manager should continue running
+                printf("Este gerente continua em execução.\n");
             }
-        }
-        else if (msg.type == ELECTION_AFTER_CONFIRMATION)
-        {
-            printf("Mensagem de confirmação recebida de %lu.\n", msg.unique_id);
-            if (msg.unique_id > max_id)
+            else if (participant_id < msg.id_unique)
             {
-                became_leader = 0;
-                max_id = msg.unique_id;
+                // This manager should restart
+                printf("Este gerente deve reiniciar.\n");
+                restart_program(); // Implement this function to restart the program
             }
-            num_responses++;
-            if (num_responses == num_participants - 1)
-            {
-                became_leader = 1;
-                break;
-            }
+            // If participant_id == msg.id_unique, do nothing (should not happen in normal circumstances)
         }
     }
 
-    if (!became_leader)
-    {
-        printf("Eu (%lu) sou o novo líder.\n", participant_id);
-        update_manager(participant_id);
-    }
-
-    printf("ELEIÇÃO VAI ACABAR AGORA: %d.\n", election_in_progress);
-    election_in_progress = 0;
-    printf("está rolando eleição: %d.\n", election_in_progress);
-
-    return became_leader;
+    close(sockfd);
+    pthread_exit(NULL);
 }
 
-void send_confirmation_message(participant receiver)
+void restart_program()
 {
-    int sockfd;
-    struct sockaddr_in serv_addr;
+    // Declare a variable for storing command line arguments
+    char *argv[MAX_ARGC];
 
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    // Populate the argv array with your program's command line arguments
+    argv[0] = "your_program_name"; // Replace this with your program's name or argv[0] from main()
+    argv[1] = NULL;                // This indicates the end of the array
+
+    // Use execv to replace the current process with a new instance of the program
+    if (execv(argv[0], argv) == -1)
     {
-        perror("socket");
+        perror("Error restarting program");
         exit(EXIT_FAILURE);
     }
-
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(ELECTION_AFTER_SLEEP_PORT);
-
-    if (inet_aton(receiver.ip_address, &serv_addr.sin_addr) == 0)
-    {
-        perror("inet_aton");
-        exit(EXIT_FAILURE);
-    }
-
-    packet msg;
-    msg.type = ELECTION_AFTER_CONFIRMATION;
-    memcpy(msg.mac_address, receiver.mac_address, 18);
-    msg.status = receiver.status;
-    msg._payload = NULL;
-    msg.time_control = receiver.time_control;
-
-    sendto(sockfd, (const void *)&msg, sizeof(msg), 0, (const struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    close(sockfd);
 }
-
-void send_election_message_after_sleep(participant receiver)
-{
-    int sockfd;
-    struct sockaddr_in serv_addr;
-
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
-        perror("socket");
-        exit(EXIT_FAILURE);
-    }
-
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(ELECTION_AFTER_SLEEP_PORT);
-
-    if (inet_aton(receiver.ip_address, &serv_addr.sin_addr) == 0)
-    {
-        perror("inet_aton");
-        exit(EXIT_FAILURE);
-    }
-
-    packet msg;
-    msg.type = ELECTION_AFTER_SLEEP;
-    memcpy(msg.mac_address, receiver.mac_address, 18);
-    msg.status = receiver.status;
-    msg._payload = NULL;
-    msg.time_control = receiver.time_control;
-
-    sendto(sockfd, (const void *)&msg, sizeof(msg), 0, (const struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    close(sockfd);
-}*/
