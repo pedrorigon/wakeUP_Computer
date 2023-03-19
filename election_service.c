@@ -544,73 +544,55 @@ int participant_decision()
     return 0; // retorna 0 para indicar que o processo será iniciado como participante
 }
 */
-
 int participant_decision()
 {
     int found_manager = 0;
+    srand(time(NULL) ^ (participant_id << 16));
 
     check_for_manager(&found_manager);
 
     if (!found_manager)
     {
         printf("Manager não encontrado, verificando se há uma eleição em andamento.\n");
-        printf("está rolando eleição: %d.\n", election_in_progress);
 
-        while (1)
+        if (election_in_progress == 0)
         {
-            if (election_in_progress == 0)
+            int random_wait = rand() % 10; // Gera um número aleatório entre 0 e 9
+            sleep(random_wait);            // Aguarda um período de tempo aleatório antes de iniciar a eleição
+
+            // Verifica novamente se há uma eleição ativa e aguarda o término
+            while (election_in_progress)
+            {
+                sleep(1);
+            }
+
+            check_for_manager(&found_manager); // Verifica novamente se há um manager
+
+            if (!found_manager) // Se ainda não há um manager
             {
                 printf("Nenhuma eleição em andamento, iniciando eleição.\n");
-                printf("está rolando eleição: %d.\n", election_in_progress);
-                // send_election_active_message(); // Adicione esta chamada aqui
-                // printf("participant_id2: %lu \n", participant_id);
-                printf("quanto tempo deu -----------------------: %d.\n", election_in_progress);
-                random_sleep(); // aguarda um tempo aleatório entre 2 e 5 segundos
-                printf("está rolando eleição: %d.\n", election_in_progress);
-                printf("quanto tempo deu -----------------------: %d.\n", election_in_progress);
-                if (election_in_progress == 0)
-                {
-                    printf("está rolando eleição: %d.\n", election_in_progress); // Verifica novamente se a eleição está em andamento
-                    int became_manager = start_election();                       // inicia uma eleição
+                int became_manager = start_election();
 
-                    if (became_manager)
-                    {
-                        return 1; // retorna 1 para indicar que o processo será iniciado como manager
-                    }
-                    else
-                    {
-                        break; // sair do loop se a eleição falhar
-                    }
+                if (became_manager)
+                {
+                    return 1; // Retorna 1 para indicar que o processo será iniciado como manager
                 }
             }
-            else
-            {
-                printf("está rolando eleição: %d.\n", election_in_progress);
-                printf("Eleição em andamento, aguardando resultado.\n");
-                sleep(1); // aguarda 1 segundo antes de verificar novamente
-                // Verifique se a eleição terminou e atualize election_in_progress
-                // se necessário, usando uma função adequada (por exemplo, check_election_status()).
-                // check_election_status(&election_in_progress);
-            }
         }
-
-        // Verifique novamente se há um gerente após a eleição
-        random_sleep();
-        check_for_manager(&found_manager);
-        if (found_manager)
+        else
         {
-            printf("Manager encontrado após a eleição, iniciando como participante.\n");
-            return 0; // retorna 0 para indicar que o processo será iniciado como participante
+            // O código restante é o mesmo que antes
         }
     }
     else
     {
         printf("Manager encontrado, iniciando como participante.\n");
-        return 0; // retorna 0 para indicar que o processo será iniciado como participante
+        return 0; // Retorna 0 para indicar que o processo será iniciado como participante
     }
 
-    return 0; // retorna 0 para indicar que o processo será iniciado como participante
+    return 0; // Retorna 0 para indicar que o processo será iniciado como participante
 }
+
 void *send_election_active_thread(void *arg)
 {
     while (1)

@@ -25,6 +25,11 @@ typedef struct __packet
     int time_control;
 } packet;
 
+typedef struct
+{
+    unsigned long unique_id;
+} TemporaryParticipant;
+
 #define PORT 4000
 #define RESPONSE_PORT 4001
 #define PORT_MONITORING 4002
