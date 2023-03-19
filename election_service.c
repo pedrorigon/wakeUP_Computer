@@ -601,6 +601,7 @@ void *send_election_active_thread(void *arg)
         if (election_in_progress)
         {
             send_election_active_message();
+            sleep(2);
         }
         else
         {
@@ -676,12 +677,13 @@ void *election_active_listener(void *arg)
         pthread_exit(NULL);
     }
 
+    election_in_progress = 0;
     while (!should_terminate_threads)
     {
         struct sockaddr_in cli_addr;
         socklen_t clilen = sizeof(cli_addr);
-        /// election_in_progress = 0;
-        // Receive message
+        // election_in_progress = 0;
+        //  Receive message
         int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
         if (n < 0)
         {
@@ -692,9 +694,9 @@ void *election_active_listener(void *arg)
         if (msg.type == ELECTION_ACTIVE_TYPE)
         {
             printf("Mensagem de eleição ativa recebida.\n");
-            printf("esta havendo eleição entendeu Bre booooooor\n");
-            printf("esta havendo eleição entendeu Bre booooooor\n");
-            printf("esta havendo eleição entendeu Bre booooooor\n");
+            // printf("esta havendo eleição entendeu Bre booooooor\n");
+            // printf("esta havendo eleição entendeu Bre booooooor\n");
+            // printf("esta havendo eleição entendeu Bre booooooor\n");
             election_in_progress = 1;
         }
     }
