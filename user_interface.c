@@ -1,5 +1,7 @@
 
 #include "ANSI-color-codes.h"
+#include <limits.h>
+#include <libgen.h>
 #include "user_interface.h"
 #include "election_service.h"
 #include "wakeonlan.h"
@@ -110,6 +112,19 @@ void print_manager(void)
         printf("    Hostname: %s\n", manager.hostname);
         printf("    IP address: %s\n", manager.ip_address);
         printf("    MAC address: %s\n", manager.mac_address);
+        if (manager.status == 1)
+        {
+            if (manager.time_control > PARTICIPANT_TIMEOUT / 2)
+                printf("    Status: " GRN "awaken\n" reset);
+            else
+                printf("    Status: " YEL "timing out\n" reset);
+        }
+        else
+        {
+
+            printf("    Status: " CYN "asleep\n" reset);
+        }
+        printf("\n ------------------------------------------------\n\n");
     }
 }
 
@@ -207,7 +222,7 @@ void *user_interface_participant_thread(void *args)
         setup_async_terminal();
         clear();
         arte_inicial();
-        /// print_participants();
+        print_participants();
         print_manager();
         puts(" Pressione c para entrar em modo de comando");
         while (!kbhit() && sem_trywait(&sem_update_interface))
@@ -221,6 +236,8 @@ void *user_interface_participant_thread(void *args)
             clear();
             arte_inicial();
             puts(BWHT " Modo comando (EXIT)" reset);
+            print_participants();
+            print_manager();
             int valid_command = 0;
             char buffer[255] = {0};
             while (!valid_command)

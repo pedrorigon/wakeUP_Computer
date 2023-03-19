@@ -241,6 +241,7 @@ void *monitor_manager_status(void *arg)
     while (1)
     {
         sleep(5); // Verifica o status do gerente a cada 5 segundos
+        // check_asleep_participant();
 
         if (get_manager_status() == 0)
         {

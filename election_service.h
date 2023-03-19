@@ -8,11 +8,14 @@
 #include <stdint.h>
 #include <net/if.h>
 #include <time.h>
+#include <limits.h>
 #include "management_service.h"
 #include "discovery_service.h"
 #include "monitoring_service.h"
 #include "structs.h"
 #include <fcntl.h>
+#include <limits.h>
+#include <libgen.h>
 
 extern uint64_t participant_id;
 extern uint64_t current_manager_id;

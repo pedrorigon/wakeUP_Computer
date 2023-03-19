@@ -13,6 +13,7 @@
 #include "monitoring_service.h"
 #include "structs.h"
 #include <fcntl.h>
+#include <limits.h>
 
 uint64_t participant_id;
 uint64_t current_manager_id;
@@ -51,7 +52,7 @@ int start_election()
     {
         if (participants[i].unique_id > participant_id)
         {
-            // Envie mensagem de eleição para processos com ID maior
+            // Envia mensagem de eleição para processos com ID maior
             send_election_message(participants[i]);
         }
     }
@@ -64,7 +65,7 @@ int start_election()
     {
         announce_victory();
 
-        // Aguarde confirmações de todos os outros processos por um tempo limitado
+        // Aguarda confirmações de todos os outros processos por um tempo limitado
         int confirmations_received = 0;
         time_t start_time = time(NULL);
         while (difftime(time(NULL), start_time) < RESPONSE_TIMEOUT)
@@ -776,15 +777,22 @@ void *listen_duplicate_manager_messages(void *arg)
 
 void restart_program()
 {
-    // Declare a variable for storing command line arguments
-    char *argv[MAX_ARGC];
+    char path[PATH_MAX];
+    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
 
-    // Populate the argv array with your program's command line arguments
-    argv[0] = "your_program_name"; // Replace this with your program's name or argv[0] from main()
-    argv[1] = NULL;                // This indicates the end of the array
+    if (len == -1)
+    {
+        perror("Error getting program path");
+        exit(EXIT_FAILURE);
+    }
 
-    // Use execv to replace the current process with a new instance of the program
-    if (execv(argv[0], argv) == -1)
+    path[len] = '\0';
+
+    char *new_argv[MAX_ARGC];
+    new_argv[0] = path;
+    new_argv[1] = NULL;
+
+    if (execv(new_argv[0], new_argv) == -1)
     {
         perror("Error restarting program");
         exit(EXIT_FAILURE);

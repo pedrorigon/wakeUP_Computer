@@ -26,6 +26,7 @@ void send_type_msg(char mac_address[18], char ip_address[16], int port, int msg_
     msg._payload = NULL;
     strcpy(msg.mac_address, mac_address);
     msg.status = 1;
+    msg.id_unique = participant_id; // teste
 
     server = gethostbyname(ip_address);
     if (!server)
@@ -339,8 +340,8 @@ void *listen_Confirmed(void *args)
                 }
                 printf("------------------------------------------------\n");
                 printf("\n");*/
-
-                add_participant(hostname, ip_address, msg.mac_address, 1, 5);
+                add_participant_noprint(hostname, ip_address, msg.mac_address, 1, msg.id_unique, 5, 1);
+                update_manager(msg.id_unique);
 
                 strcpy(manager.hostname, hostname);
                 strcpy(manager.ip_address, ip_address);
