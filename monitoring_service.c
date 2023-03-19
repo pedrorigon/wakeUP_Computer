@@ -245,6 +245,7 @@ void *monitor_manager_status(void *arg)
         if (get_manager_status() == 0)
         {
             printf("O manager saiu, iniciando processo de eleição.\n");
+            // int new_manager = start_election_after_sleep();
             int new_manager = start_election();
             if (new_manager)
             {
