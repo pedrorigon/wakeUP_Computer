@@ -143,12 +143,7 @@ void start_participant_threads()
     //     printf("Error creating election_listener thread\n");
     // }
 
-    int rc = pthread_create(&monitor_manager_status_thread, NULL, monitor_manager_status, NULL);
-    if (rc)
-    {
-        printf("Error creating monitor_manager_status thread\n");
-    }
-    rc = pthread_create(&confirmed_thread, NULL, listen_Confirmed, NULL);
+    int rc = pthread_create(&confirmed_thread, NULL, listen_Confirmed, NULL);
     if (rc)
     {
         printf("Error creating listen_discovery thread\n");
@@ -168,11 +163,16 @@ void start_participant_threads()
     {
         printf("Error creating user_interface thread\n");
     }
-    // rc = pthread_create(&exit_participants_control, NULL, exit_control, NULL);
-    // if (rc)
-    // {
-    //     printf("Error creating exit_participants thread\n");
-    // }
+    rc = pthread_create(&exit_participants_control, NULL, exit_control, NULL);
+    if (rc)
+    {
+        printf("Error creating exit_participants thread\n");
+    }
+    rc = pthread_create(&monitor_manager_status_thread, NULL, monitor_manager_status, NULL);
+    if (rc)
+    {
+        printf("Error creating monitor_manager_status thread\n");
+    }
 
     pthread_join(confirmed_thread, NULL);
 }

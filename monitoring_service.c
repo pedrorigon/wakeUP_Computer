@@ -11,9 +11,9 @@ pthread_t confirmed_thread;
 pthread_t msg_discovery_thread;
 pthread_t listen_monitoring_thread;
 pthread_t user_interface_control;
-// pthread_t exit_participants_control;
+pthread_t exit_participants_control;
 pthread_t monitor_manager_status_thread;
-// pthread_t election_listener_thread;
+//  pthread_t election_listener_thread;
 
 void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16])
 {
@@ -241,13 +241,14 @@ void *monitor_manager_status(void *arg)
 {
     while (1)
     {
-        sleep(1); // Verifica o status do gerente a cada 5 segundos
-        check_asleep_participant();
+        sleep(1); // Verifica o status do gerente a cada 1 segundo
         printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE.\n");
-        if (get_manager_status() == 0)
+
+        int manager_status = get_manager_status();
+
+        if (manager_status == 0)
         {
             printf("O manager saiu, iniciando processo de eleição.\n");
-            // int new_manager = start_election_after_sleep();
             int new_manager = start_election();
             if (new_manager)
             {
@@ -259,9 +260,7 @@ void *monitor_manager_status(void *arg)
                 pthread_join(msg_discovery_thread, NULL);
                 pthread_join(listen_monitoring_thread, NULL);
                 pthread_join(user_interface_control, NULL);
-                // pthread_join(exit_participants_control, NULL);
-                pthread_join(monitor_manager_status_thread, NULL);
-                // pthread_join(election_listener_thread, NULL);
+                pthread_join(exit_participants_control, NULL);
 
                 // Inicia os threads de gerente
                 start_manager_threads();
