@@ -85,7 +85,7 @@ int start_election()
             became_leader = 1;
         }
     }
-
+    printf("ELEIÇÃO VAI ACABAR AGORA: %d.\n", election_in_progress);
     election_in_progress = 0;
     printf("está rolando eleição: %d.\n", election_in_progress);
     return became_leader;
@@ -490,75 +490,25 @@ void random_sleep()
     int random_number = rand() % 4 + 2; // gera um número aleatório entre 2 e 4 segundos
     sleep(random_number);               // aguarda o número de segundos gerado aleatoriamente
 }
-/*
+
 int participant_decision()
 {
     int found_manager = 0;
+    // srand(time(NULL) ^ (participant_id << 16));
 
     check_for_manager(&found_manager);
 
     if (!found_manager)
     {
         printf("Manager não encontrado, verificando se há uma eleição em andamento.\n");
-
-        if (election_in_progress == 0)
-        {
-            printf("Nenhuma eleição em andamento, iniciando eleição.\n");
-            // send_election_active_message(); // Adicione esta chamada aqui
-            printf("participant_id2: %lu \n", participant_id);
-            int became_manager = start_election(); // inicia uma eleição
-
-            if (became_manager)
-            {
-                return 1; // retorna 1 para indicar que o processo será iniciado como manager
-            }
-        }
-        else
-        {
-            printf("Eleição em andamento, aguardando resultado.\n");
-            while (election_in_progress)
-            {
-                // Aguarda o fim da eleição
-                sleep(1); // Aguarda 1 segundo antes de verificar novamente
-
-                // Verifique se a eleição terminou e atualize election_in_progress
-                // se necessário, usando uma função adequada (por exemplo, check_election_status()).
-                // check_election_status(&election_in_progress);
-            }
-
-            // Verifique novamente se há um gerente após a eleição
-            check_for_manager(&found_manager);
-            if (found_manager)
-            {
-                printf("Manager encontrado após a eleição, iniciando como participante.\n");
-                return 0; // retorna 0 para indicar que o processo será iniciado como participante
-            }
-        }
-    }
-    else
-    {
-        printf("Manager encontrado, iniciando como participante.\n");
-        return 0; // retorna 0 para indicar que o processo será iniciado como participante
-    }
-
-    return 0; // retorna 0 para indicar que o processo será iniciado como participante
-}
-*/
-int participant_decision()
-{
-    int found_manager = 0;
-    srand(time(NULL) ^ (participant_id << 16));
-
-    check_for_manager(&found_manager);
-
-    if (!found_manager)
-    {
-        printf("Manager não encontrado, verificando se há uma eleição em andamento.\n");
+        int found_manager = 0;
+        srand(time(NULL) ^ (participant_id << 16));
 
         if (election_in_progress == 0)
         {
             int random_wait = rand() % 10; // Gera um número aleatório entre 0 e 9
             sleep(random_wait);            // Aguarda um período de tempo aleatório antes de iniciar a eleição
+            // check_for_manager(&found_manager); // Aguarda um período de tempo aleatório antes de iniciar a eleição
 
             // Verifica novamente se há uma eleição ativa e aguarda o término
             while (election_in_progress)
@@ -572,11 +522,21 @@ int participant_decision()
             if (!found_manager) // Se ainda não há um manager
             {
                 printf("Nenhuma eleição em andamento, iniciando eleição.\n");
-                int became_manager = start_election();
-
-                if (became_manager)
+                printf("A VARAIVEL ELECTION IN PROGRESS VALE X: %d\n", election_in_progress);
+                if (election_in_progress == 0)
                 {
-                    return 1; // Retorna 1 para indicar que o processo será iniciado como manager
+                    int became_manager = start_election();
+                    if (became_manager)
+                    {
+                        return 1; // Retorna 1 para indicar que o processo será iniciado como manager
+                    }
+                }
+                else
+                {
+                    // Espera um tempo aleatório antes de reiniciar a função participant_decision()
+                    int random_wait = rand() % 10;
+                    sleep(random_wait);
+                    return participant_decision();
                 }
             }
         }
