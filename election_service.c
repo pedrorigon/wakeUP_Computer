@@ -564,6 +564,7 @@ int participant_decision()
             while (election_in_progress)
             {
                 sleep(1);
+                sleep(random_wait);
             }
 
             check_for_manager(&found_manager); // Verifica novamente se há um manager
@@ -679,7 +680,7 @@ void *election_active_listener(void *arg)
     {
         struct sockaddr_in cli_addr;
         socklen_t clilen = sizeof(cli_addr);
-        election_in_progress = 0;
+        /// election_in_progress = 0;
         // Receive message
         int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
         if (n < 0)
