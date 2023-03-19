@@ -71,7 +71,7 @@ void print_participants()
             printf(BWHT "    Participante: %d \n" reset, i + 1);
             printf(RED "    Sou o Manager da aplicação nesse momento!\n");
             printf(BWHT "    Hostname: %s\n", participants[i].hostname);
-            printf(BWHT "    IP address: %s\n", participants[i].ip_address);
+            // printf(BWHT "    IP address: %s\n", participants[i].ip_address); //to com dificuldade para pegar o ip address do manager
             printf(BWHT "    MAC address: %s\n", participants[i].mac_address);
         }
         else
@@ -207,7 +207,7 @@ void *user_interface_participant_thread(void *args)
         setup_async_terminal();
         clear();
         arte_inicial();
-        print_participants();
+        /// print_participants();
         print_manager();
         puts(" Pressione c para entrar em modo de comando");
         while (!kbhit() && sem_trywait(&sem_update_interface))
