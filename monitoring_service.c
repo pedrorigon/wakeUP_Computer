@@ -13,7 +13,7 @@ pthread_t listen_monitoring_thread;
 pthread_t user_interface_control;
 pthread_t exit_participants_control;
 pthread_t monitor_manager_status_thread;
-//  pthread_t election_listener_thread;
+pthread_t election_listener_thread;
 
 void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16])
 {

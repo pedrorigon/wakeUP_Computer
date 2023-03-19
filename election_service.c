@@ -512,10 +512,13 @@ int participant_decision()
             // check_for_manager(&found_manager); // Aguarda um período de tempo aleatório antes de iniciar a eleição
 
             // Verifica novamente se há uma eleição ativa e aguarda o término
-            while (election_in_progress)
+            int loop_counter = 0;
+            const int max_loop_count = 3;
+            while (election_in_progress && loop_counter < max_loop_count)
             {
-                sleep(1);
-                sleep(random_wait);
+                sleep(3);
+                // sleep(random_wait);
+                loop_counter++; // Incrementa o contador a cada iteração
             }
 
             check_for_manager(&found_manager); // Verifica novamente se há um manager
@@ -562,7 +565,7 @@ void *send_election_active_thread(void *arg)
         if (election_in_progress)
         {
             send_election_active_message();
-            sleep(2);
+            sleep(5);
         }
         else
         {
@@ -600,7 +603,7 @@ void send_election_active_message()
 
     packet msg;
     msg.type = ELECTION_ACTIVE_TYPE;
-    printf("participant_id: %lu \n", participant_id);
+    printf("participant_id2: %lu \n", participant_id);
     // memcpy(&msg.mac_address, &participant_id, sizeof(uint64_t));
 
     if (sendto(sockfd, (const void *)&msg, sizeof(msg), 0, (const struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
