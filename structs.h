@@ -23,6 +23,7 @@ typedef struct __packet
     int status;
     const char *_payload; // Dados da mensagem
     int time_control;
+    uint64_t election_id;
 } packet;
 
 typedef struct
