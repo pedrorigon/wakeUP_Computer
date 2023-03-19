@@ -47,6 +47,16 @@ int main()
     }
     int manager = participant_decision();
 
+    // Encerra as threads
+    pthread_cancel(election_listener_thread);
+    pthread_cancel(send_election_active_tid);
+    pthread_cancel(election_active_listener_tid);
+
+    // Aguarda a finalização das threads
+    pthread_join(election_listener_thread, NULL);
+    pthread_join(send_election_active_tid, NULL);
+    pthread_join(election_active_listener_tid, NULL);
+
     signal(SIGTERM, sig_handler);
     signal(SIGINT, sig_handler);
 
