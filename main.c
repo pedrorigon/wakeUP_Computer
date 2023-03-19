@@ -143,7 +143,7 @@ void start_participant_threads()
         printf("Error creating election_listener thread\n");
     }
 
-    int rc = pthread_create(&confirmed_thread, NULL, listen_Confirmed, NULL);
+    rc = pthread_create(&confirmed_thread, NULL, listen_Confirmed, NULL);
     if (rc)
     {
         printf("Error creating listen_discovery thread\n");
