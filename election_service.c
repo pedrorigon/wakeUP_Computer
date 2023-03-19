@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <time.h>
 #include "election_service.h"
 #include "management_service.h"
 #include "discovery_service.h"
@@ -42,6 +43,7 @@ void initialize_participant_id()
 int start_election()
 {
     election_in_progress = 1;
+    printf("está rolando eleição: %d.\n", election_in_progress);
     int became_leader = 0;
     int num_responses = 0;
 
@@ -85,6 +87,7 @@ int start_election()
     }
 
     election_in_progress = 0;
+    printf("está rolando eleição: %d.\n", election_in_progress);
     return became_leader;
 }
 
@@ -481,6 +484,13 @@ void *listen_manager_check(void *args)
     pthread_exit(NULL);
 }
 
+void random_sleep()
+{
+    srand(time(NULL));                  // usa o tempo atual como semente
+    int random_number = rand() % 4 + 2; // gera um número aleatório entre 2 e 4 segundos
+    sleep(random_number);               // aguarda o número de segundos gerado aleatoriamente
+}
+/*
 int participant_decision()
 {
     int found_manager = 0;
@@ -533,7 +543,74 @@ int participant_decision()
 
     return 0; // retorna 0 para indicar que o processo será iniciado como participante
 }
+*/
 
+int participant_decision()
+{
+    int found_manager = 0;
+
+    check_for_manager(&found_manager);
+
+    if (!found_manager)
+    {
+        printf("Manager não encontrado, verificando se há uma eleição em andamento.\n");
+        printf("está rolando eleição: %d.\n", election_in_progress);
+
+        while (1)
+        {
+            if (election_in_progress == 0)
+            {
+                printf("Nenhuma eleição em andamento, iniciando eleição.\n");
+                printf("está rolando eleição: %d.\n", election_in_progress);
+                // send_election_active_message(); // Adicione esta chamada aqui
+                // printf("participant_id2: %lu \n", participant_id);
+                printf("quanto tempo deu -----------------------: %d.\n", election_in_progress);
+                random_sleep(); // aguarda um tempo aleatório entre 2 e 5 segundos
+                printf("está rolando eleição: %d.\n", election_in_progress);
+                printf("quanto tempo deu -----------------------: %d.\n", election_in_progress);
+                if (election_in_progress == 0)
+                {
+                    printf("está rolando eleição: %d.\n", election_in_progress); // Verifica novamente se a eleição está em andamento
+                    int became_manager = start_election();                       // inicia uma eleição
+
+                    if (became_manager)
+                    {
+                        return 1; // retorna 1 para indicar que o processo será iniciado como manager
+                    }
+                    else
+                    {
+                        break; // sair do loop se a eleição falhar
+                    }
+                }
+            }
+            else
+            {
+                printf("está rolando eleição: %d.\n", election_in_progress);
+                printf("Eleição em andamento, aguardando resultado.\n");
+                sleep(1); // aguarda 1 segundo antes de verificar novamente
+                // Verifique se a eleição terminou e atualize election_in_progress
+                // se necessário, usando uma função adequada (por exemplo, check_election_status()).
+                // check_election_status(&election_in_progress);
+            }
+        }
+
+        // Verifique novamente se há um gerente após a eleição
+        random_sleep();
+        check_for_manager(&found_manager);
+        if (found_manager)
+        {
+            printf("Manager encontrado após a eleição, iniciando como participante.\n");
+            return 0; // retorna 0 para indicar que o processo será iniciado como participante
+        }
+    }
+    else
+    {
+        printf("Manager encontrado, iniciando como participante.\n");
+        return 0; // retorna 0 para indicar que o processo será iniciado como participante
+    }
+
+    return 0; // retorna 0 para indicar que o processo será iniciado como participante
+}
 void *send_election_active_thread(void *arg)
 {
     while (1)
@@ -632,6 +709,9 @@ void *election_active_listener(void *arg)
         if (msg.type == ELECTION_ACTIVE_TYPE)
         {
             printf("Mensagem de eleição ativa recebida.\n");
+            printf("esta havendo eleição entendeu Bre booooooor\n");
+            printf("esta havendo eleição entendeu Bre booooooor\n");
+            printf("esta havendo eleição entendeu Bre booooooor\n");
             election_in_progress = 1;
         }
     }

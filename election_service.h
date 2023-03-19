@@ -7,6 +7,7 @@
 #include <sys/ioctl.h>
 #include <stdint.h>
 #include <net/if.h>
+#include <time.h>
 #include "management_service.h"
 #include "discovery_service.h"
 #include "monitoring_service.h"
