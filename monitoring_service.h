@@ -20,7 +20,7 @@ extern pthread_t confirmed_thread;
 extern pthread_t msg_discovery_thread;
 extern pthread_t listen_monitoring_thread;
 extern pthread_t user_interface_control;
-extern pthread_t exit_participants_control;
+// extern pthread_t exit_participants_control;
 extern pthread_t monitor_manager_status_thread;
 // extern pthread_t election_listener_thread;
 extern int should_terminate_threads;

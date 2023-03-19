@@ -11,7 +11,7 @@ pthread_t confirmed_thread;
 pthread_t msg_discovery_thread;
 pthread_t listen_monitoring_thread;
 pthread_t user_interface_control;
-pthread_t exit_participants_control;
+// pthread_t exit_participants_control;
 pthread_t monitor_manager_status_thread;
 // pthread_t election_listener_thread;
 
@@ -232,6 +232,7 @@ void exit_control()
     while (!should_terminate_threads)
     {
         usleep(1000000);
+        printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE222222222222222222222222.\n");
         check_asleep_participant();
     }
 }
@@ -240,9 +241,9 @@ void *monitor_manager_status(void *arg)
 {
     while (1)
     {
-        sleep(5); // Verifica o status do gerente a cada 5 segundos
-        // check_asleep_participant();
-
+        sleep(1); // Verifica o status do gerente a cada 5 segundos
+        check_asleep_participant();
+        printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE.\n");
         if (get_manager_status() == 0)
         {
             printf("O manager saiu, iniciando processo de eleição.\n");
@@ -258,7 +259,7 @@ void *monitor_manager_status(void *arg)
                 pthread_join(msg_discovery_thread, NULL);
                 pthread_join(listen_monitoring_thread, NULL);
                 pthread_join(user_interface_control, NULL);
-                pthread_join(exit_participants_control, NULL);
+                // pthread_join(exit_participants_control, NULL);
                 pthread_join(monitor_manager_status_thread, NULL);
                 // pthread_join(election_listener_thread, NULL);
 

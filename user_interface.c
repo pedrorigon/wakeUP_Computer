@@ -75,6 +75,8 @@ void print_participants()
             printf(BWHT "    Hostname: %s\n", participants[i].hostname);
             // printf(BWHT "    IP address: %s\n", participants[i].ip_address); //to com dificuldade para pegar o ip address do manager
             printf(BWHT "    MAC address: %s\n", participants[i].mac_address);
+            printf(BWHT "    ID: %lu\n", participants[i].unique_id);
+            printf(BWHT "    TIME CONTROL: %d\n", participants[i].time_control);
         }
         else
         {

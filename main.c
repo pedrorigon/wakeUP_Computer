@@ -89,6 +89,7 @@ void start_manager_threads()
     pthread_t manager_check_thread;
     pthread_t listen_duplicate_manager_thread;
     pthread_t send_duplicate_manager_thread;
+    pthread_t exit_participants_control;
 
     int rc = pthread_create(&discovery_thread, NULL, listen_discovery, NULL);
     if (rc)
@@ -167,11 +168,11 @@ void start_participant_threads()
     {
         printf("Error creating user_interface thread\n");
     }
-    rc = pthread_create(&exit_participants_control, NULL, exit_control, NULL);
-    if (rc)
-    {
-        printf("Error creating exit_participants thread\n");
-    }
+    // rc = pthread_create(&exit_participants_control, NULL, exit_control, NULL);
+    // if (rc)
+    // {
+    //     printf("Error creating exit_participants thread\n");
+    // }
 
     pthread_join(confirmed_thread, NULL);
 }

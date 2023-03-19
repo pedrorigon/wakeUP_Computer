@@ -214,6 +214,7 @@ int get_manager_status()
         printf("Error: Manager not found in table.\n");
     }
     pthread_mutex_unlock(&participants_mutex);
+    printf("statusssssssssssssss %d.\n", status);
     return status;
 }
 
@@ -227,8 +228,10 @@ void check_asleep_participant()
         int remove_count = 0;
         for (int i = 0; i < num_participants; i++)
         {
+            printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE333333333333333333333.\n");
             if (participants[i].unique_id != participant_id)
             {
+                printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE4444444444444444444.\n");
                 // printf("\n%d\n", participants[i].time_control);
                 if (participants[i].time_control > 0)
                 {
