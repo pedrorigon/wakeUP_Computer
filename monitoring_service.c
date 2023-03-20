@@ -236,7 +236,7 @@ void exit_control()
 
 void *monitor_manager_status(void *arg)
 {
-    while (1)
+    while (should_terminate_threads == 0)
     {
         sleep(1); // Verifica o status do gerente a cada 1 segundo
         printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE.\n");
@@ -249,38 +249,13 @@ void *monitor_manager_status(void *arg)
             int new_manager = start_election();
             if (new_manager)
             {
+                printf("    MANAGER: %lu\n", current_manager_id);
+                printf("    MeuID: %lu\n", participant_id);
                 // Define a variável de controle para encerrar os threads de participante
                 should_terminate_threads = 1;
                 printf("TESTEEEEEEEEEEEEEEEEEEEEE777777777777777777777777.\n");
-                pthread_cancel(confirmed_thread);
-                pthread_cancel(msg_discovery_thread);
-                pthread_cancel(listen_monitoring_thread);
-                pthread_cancel(user_interface_control);
-                pthread_cancel(exit_participants_control);
-                // pthread_cancel(monitor_manager_status_thread);
-                pthread_cancel(election_listener_thread);
-
-                printf("TESTEEEEEEEEEEEEEEEEEEEEE----ANTES DA CONFIRMED.\n");
-                // Aguarde os threads de participante terminarem
-                printf("TESTEEEEEEEEEEEEEEEEEEEEE----CONFIRMED.\n");
-                pthread_join(msg_discovery_thread, NULL);
-                printf("TESTEEEEEEEEEEEEEEEEEEEEE----DISCOVERY.\n");
-                pthread_join(listen_monitoring_thread, NULL);
-                printf("TESTEEEEEEEEEEEEEEEEEEEEE----LISTEN_MONITORING.\n");
-                pthread_join(user_interface_control, NULL);
-                printf("TESTEEEEEEEEEEEEEEEEEEEEE----USER_INTERFACE.\n");
-                pthread_join(exit_participants_control, NULL);
-                printf("TESTEEEEEEEEEEEEEEEEEEEEE----EXIT_PARTICIPANTS.\n");
-                pthread_join(monitor_manager_status_thread, NULL);
-                pthread_join(confirmed_thread, NULL);
-                pthread_join(election_listener_thread, NULL);
-                printf("TESTEEEEEEEEEEEEEEEEEEEEE----ELECTION_LISTENER.\n");
-                // Inicia os threads de gerente
-                printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE777777777777777777777777.\n");
-                start_manager_threads();
             }
-            break;
         }
+        printf("TESTEEEEEEEEEEEEEEEEEEEE-foraaaaaa.\n");
     }
-    return NULL;
 }

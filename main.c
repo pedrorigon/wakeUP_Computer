@@ -82,6 +82,7 @@ void sig_handler(int signum)
 
 void start_manager_threads()
 {
+    should_terminate_threads = 0;
     insert_manager_into_participants_table();
     pthread_t discovery_thread;
     pthread_t monitoring_thread;
@@ -173,6 +174,53 @@ void start_participant_threads()
     {
         printf("Error creating monitor_manager_status thread\n");
     }
+    while (!should_terminate_threads)
+    {
+        if (current_manager_id == participant_id)
+        {
+            should_terminate_threads = 1;
+        }
 
+        sleep(1);
+    }
+
+    // Encerra as threads de participante
+    printf("Canceling election_listener_thread\n");
+    pthread_cancel(election_listener_thread);
+    printf("Canceling confirmed_thread\n");
+    pthread_cancel(confirmed_thread);
+    printf("Canceling msg_discovery_thread\n");
+    pthread_cancel(msg_discovery_thread);
+    printf("Canceling listen_monitoring_thread\n");
+    pthread_cancel(listen_monitoring_thread);
+    printf("Canceling user_interface_control\n");
+    pthread_cancel(user_interface_control);
+    printf("Canceling exit_participants_control\n");
+    pthread_cancel(exit_participants_control);
+    printf("Canceling monitor_manager_status_thread\n");
+    pthread_cancel(monitor_manager_status_thread);
+
+    sleep(1);
+    // Aguarda a finalização das threads
+    printf("Joining election_listener_thread\n");
+    pthread_join(election_listener_thread, NULL);
+    printf("Joining confirmed_thread\n");
     pthread_join(confirmed_thread, NULL);
+    printf("Joining msg_discovery_thread\n");
+    pthread_join(msg_discovery_thread, NULL);
+    printf("Joining listen_monitoring_thread\n");
+    pthread_join(listen_monitoring_thread, NULL);
+    printf("Joining user_interface_control\n");
+    pthread_join(user_interface_control, NULL);
+    printf("Joining exit_participants_control\n");
+    pthread_join(exit_participants_control, NULL);
+    printf("Joining monitor_manager_status_thread\n");
+    pthread_join(monitor_manager_status_thread, NULL);
+    printf("Estou aqui hehehe\n");
+    // Inicia as threads de gerente
+    printf("current_manager_id: %lu, participant_id: %lu\n", current_manager_id, participant_id);
+
+    start_manager_threads();
+
+    // pthread_join(confirmed_thread, NULL);
 }

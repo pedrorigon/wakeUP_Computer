@@ -221,6 +221,8 @@ void *user_interface_participant_thread(void *args)
 
     while (!should_terminate_threads)
     {
+        pthread_testcancel();
+
         setup_async_terminal();
         clear();
         arte_inicial();
@@ -228,7 +230,9 @@ void *user_interface_participant_thread(void *args)
         print_manager();
         puts(" Pressione c para entrar em modo de comando");
         while (!kbhit() && sem_trywait(&sem_update_interface))
-            ;
+        {
+            pthread_testcancel(); // chamada para verificar o canceamento
+        }
         if (!kbhit())
             continue; // Se saiu por causa do semáforo, segue em frente
         int key = get_hit();
@@ -244,6 +248,8 @@ void *user_interface_participant_thread(void *args)
             char buffer[255] = {0};
             while (!valid_command)
             {
+                pthread_testcancel();
+
                 printf(" > ");
                 memset(buffer, 0, sizeof(buffer));
                 fgets(buffer, sizeof(buffer), stdin);
