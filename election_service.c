@@ -764,15 +764,15 @@ void *listen_duplicate_manager_messages(void *arg)
 
         if (msg.type == MANAGER_DUPLICATE_TYPE)
         {
-            printf("Mensagem de gerente duplicado recebida.\n");
+            // printf("Mensagem de gerente duplicado recebida.\n");
 
             if (participant_id >= msg.id_unique)
             {
-                printf("Este gerente continua em execução.\n");
+                // printf("Este gerente continua em execução.\n");
             }
             else if (participant_id < msg.id_unique)
             {
-                printf("Este gerente deve reiniciar.\n");
+                // printf("Este gerente deve reiniciar.\n");
                 restart_program();
             }
         }
