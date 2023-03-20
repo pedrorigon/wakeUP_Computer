@@ -102,7 +102,7 @@ int wait_for_responses(int response_timeout)
     struct sockaddr_in serv_addr;
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(RESPONSE_PORT);
+    serv_addr.sin_port = htons(RESPONSE_PORT_ELECTION);
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     // Vincular o socket à porta específica
@@ -148,7 +148,7 @@ void respond_election(char mac_address[18], char ip_address[16], char hostname[2
     struct sockaddr_in serv_addr;
     memset((char *)&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(RESPONSE_PORT);
+    serv_addr.sin_port = htons(RESPONSE_PORT_ELECTION);
     if (inet_aton(ip_address, &serv_addr.sin_addr) == 0)
     {
         printf("Invalid IP address: %s", ip_address);
@@ -197,7 +197,7 @@ int wait_for_confirmations(int response_timeout)
     struct sockaddr_in serv_addr;
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(RESPONSE_PORT);
+    serv_addr.sin_port = htons(RESPONSE_PORT_ELECTION);
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     // Vincular o socket à porta específica
@@ -329,10 +329,6 @@ void *election_listener(void *arg)
     close(sockfd);
     pthread_exit(NULL);
 }
-
-/*Adicione a lógica para iniciar a eleição quando o manager falhar ou for colocado para dormir.
- Isso dependerá da lógica do seu programa, mas geralmente você pode chamar a função start_election()
- em um callback ou em uma thread que esteja monitorando o status do manager.*/
 
 void send_election_message(participant receiver)
 {
