@@ -23,7 +23,7 @@ extern int should_terminate_threads;
 void send_goodbye_msg(void);
 void send_discovery_msg(int sockfd, struct sockaddr_in *addr, socklen_t len, char mac_address[18]);
 void *listen_discovery(void *args);
-void participant_start();
+void *participant_start(void *arg);
 void get_mac_address(char *mac_address);
 void *listen_Confirmed(void *args);
 void send_confirmed_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16]);

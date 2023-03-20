@@ -28,9 +28,9 @@ extern int should_terminate_threads;
 void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16]);
 void send_monitoring_msg(int sockfd, struct sockaddr_in *addr, socklen_t len);
 void *listen_monitoring(void *args);
-void manager_start_monitoring_service();
+void *manager_start_monitoring_service(void *arg);
 void *listen_Confirmed_monitoring(void *args);
-void exit_control();
+void *exit_control(void *arg);
 void *monitor_manager_status(void *arg);
 
 #endif

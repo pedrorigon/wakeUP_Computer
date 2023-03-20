@@ -44,7 +44,6 @@ void initialize_participant_id()
 int start_election()
 {
     election_in_progress = 1;
-    printf("está rolando eleição: %d.\n", election_in_progress);
     int became_leader = 0;
     int num_responses = 0;
 
@@ -86,9 +85,7 @@ int start_election()
             became_leader = 1;
         }
     }
-    printf("ELEIÇÃO VAI ACABAR AGORA: %d.\n", election_in_progress);
     election_in_progress = 0;
-    printf("está rolando eleição: %d.\n", election_in_progress);
     return became_leader;
 }
 
@@ -229,14 +226,12 @@ int wait_for_confirmations(int response_timeout)
     time_t start_time = time(NULL);
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
-    // Definir a estrutura sockaddr_in para ouvir na porta específica
     struct sockaddr_in serv_addr;
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(CONFIRMATION_ELECTION_PORT);
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    // Vincular o socket à porta específica
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
         perror("bind");
@@ -262,7 +257,7 @@ int wait_for_confirmations(int response_timeout)
             }
         }
 
-        usleep(100000); // Espera 100ms antes de verificar novamente
+        usleep(100000);
     }
 
     close(sockfd);
@@ -322,7 +317,6 @@ void *election_listener(void *arg)
             continue;
         }
 
-        // Verifique se a mensagem é do próprio processo
         if (participants[sender_index].unique_id == participant_id)
         {
             continue;
@@ -352,8 +346,6 @@ void *election_listener(void *arg)
             {
                 printf("Mensagem de vitória recebida de %s\n", participants[sender_index].hostname);
                 update_manager(participants[sender_index].unique_id);
-
-                // Adicione o código para enviar uma mensagem de confirmação
                 send_confirm_election(participants[sender_index].mac_address, participants[sender_index].ip_address, participants[sender_index].hostname, CONFIRMATION_ELECTION_TYPE);
             }
             else
@@ -406,7 +398,7 @@ void check_for_manager(int *found_manager)
     if (sockfd < 0)
     {
         printf("Erro ao criar o socket.\n");
-        *found_manager = 0; // não encontrou nenhum manager
+        *found_manager = 0;
         return;
     }
 
@@ -420,7 +412,7 @@ void check_for_manager(int *found_manager)
     if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast_permission, sizeof(broadcast_permission)) < 0)
     {
         printf("Erro ao configurar o socket para broadcast.\n");
-        *found_manager = 0; // não encontrou nenhum manager
+        *found_manager = 0;
         return;
     }
 
@@ -430,7 +422,7 @@ void check_for_manager(int *found_manager)
     if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
     {
         printf("Erro ao configurar o timeout do socket.\n");
-        *found_manager = 0; // não encontrou nenhum manager
+        *found_manager = 0;
         return;
     }
 
@@ -442,7 +434,8 @@ void check_for_manager(int *found_manager)
     if (n < 0)
     {
         printf("Erro ao enviar mensagem.\n");
-        *found_manager = 0; // não encontrou nenhum manager
+        *found_manager = 0;
+
         return;
     }
 
@@ -491,7 +484,7 @@ void *listen_manager_check(void *args)
         pthread_exit(NULL);
     }
 
-    while (!should_terminate_threads) // Modifique o loop para verificar a variável should_terminate_threads
+    while (!should_terminate_threads)
     {
         struct sockaddr_in cli_addr;
         socklen_t clilen = sizeof(cli_addr);
@@ -506,10 +499,8 @@ void *listen_manager_check(void *args)
 
         if (msg.type == MANAGER_CHECK_TYPE)
         {
-            // This is a manager check request, so respond with our status
             packet response;
             response.type = MANAGER_RESPONSE_CHECK_TYPE;
-            // Send response
             sendto(sockfd, &response, sizeof(response), 0, (struct sockaddr *)&cli_addr, clilen);
         }
     }
@@ -519,18 +510,15 @@ void *listen_manager_check(void *args)
 
 void random_sleep()
 {
-    srand(time(NULL));                  // usa o tempo atual como semente
-    int random_number = rand() % 4 + 2; // gera um número aleatório entre 2 e 4 segundos
-    sleep(random_number);               // aguarda o número de segundos gerado aleatoriamente
+    srand(time(NULL));
+    int random_number = rand() % 4 + 2;
+    sleep(random_number);
 }
 
 int participant_decision()
 {
     int found_manager = 0;
-    // srand(time(NULL) ^ (participant_id << 16));
-
     check_for_manager(&found_manager);
-
     if (!found_manager)
     {
         printf("Manager não encontrado, verificando se há uma eleição em andamento.\n");
@@ -539,23 +527,18 @@ int participant_decision()
 
         if (election_in_progress == 0)
         {
-            int random_wait = rand() % 10; // Gera um número aleatório entre 0 e 9
-            sleep(random_wait);            // Aguarda um período de tempo aleatório antes de iniciar a eleição
-            // check_for_manager(&found_manager); // Aguarda um período de tempo aleatório antes de iniciar a eleição
-
-            // Verifica novamente se há uma eleição ativa e aguarda o término
+            int random_wait = rand() % 10;
+            sleep(random_wait);
             int loop_counter = 0;
             const int max_loop_count = 3;
             while (election_in_progress && loop_counter < max_loop_count)
             {
                 sleep(3);
-                // sleep(random_wait);
-                loop_counter++; // Incrementa o contador a cada iteração
+                loop_counter++;
             }
+            check_for_manager(&found_manager);
 
-            check_for_manager(&found_manager); // Verifica novamente se há um manager
-
-            if (!found_manager) // Se ainda não há um manager
+            if (!found_manager)
             {
                 printf("Nenhuma eleição em andamento, iniciando eleição.\n");
                 printf("A VARAIVEL ELECTION IN PROGRESS VALE X: %d\n", election_in_progress);
@@ -564,12 +547,11 @@ int participant_decision()
                     int became_manager = start_election();
                     if (became_manager)
                     {
-                        return 1; // Retorna 1 para indicar que o processo será iniciado como manager
+                        return 1;
                     }
                 }
                 else
                 {
-                    // Espera um tempo aleatório antes de reiniciar a função participant_decision()
                     int random_wait = rand() % 10;
                     sleep(random_wait);
                     return participant_decision();
@@ -578,7 +560,13 @@ int participant_decision()
         }
         else
         {
-            // O código restante é o mesmo que antes
+            int loop_counter2 = 0;
+            const int max_loop_count2 = 3;
+            while (election_in_progress && loop_counter2 < max_loop_count2)
+            {
+                sleep(3);
+                loop_counter2++;
+            }
         }
     }
     else
@@ -601,10 +589,9 @@ void *send_election_active_thread(void *arg)
         }
         else
         {
-            // Aguarda a eleição começar novamente
             while (!election_in_progress)
             {
-                sleep(1); // Aguarda 1 segundo antes de verificar novamente
+                sleep(1);
             }
         }
     }
@@ -613,15 +600,13 @@ void send_election_active_message()
 {
     int sockfd;
     struct sockaddr_in serv_addr;
-    int broadcast_permission = 1; // Adicione esta linha
+    int broadcast_permission = 1;
 
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
         perror("socket");
         exit(EXIT_FAILURE);
     }
-
-    // Adicione esta parte para habilitar a opção SO_BROADCAST no socket
     if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, (void *)&broadcast_permission, sizeof(broadcast_permission)) < 0)
     {
         perror("setsockopt");
@@ -636,7 +621,6 @@ void send_election_active_message()
     packet msg;
     msg.type = ELECTION_ACTIVE_TYPE;
     printf("participant_id2: %lu \n", participant_id);
-    // memcpy(&msg.mac_address, &participant_id, sizeof(uint64_t));
 
     if (sendto(sockfd, (const void *)&msg, sizeof(msg), 0, (const struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
@@ -654,14 +638,11 @@ void *election_active_listener(void *arg)
     socklen_t manlen = sizeof(serv_addr);
     packet msg;
 
-    // Create socket
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
     {
         printf("Error opening socket");
         pthread_exit(NULL);
     }
-
-    // Bind socket to address and port
     memset((char *)&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -678,7 +659,6 @@ void *election_active_listener(void *arg)
     {
         struct sockaddr_in cli_addr;
         socklen_t clilen = sizeof(cli_addr);
-        // election_in_progress = 0;
         //  Receive message
         int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
         if (n < 0)
@@ -690,9 +670,6 @@ void *election_active_listener(void *arg)
         if (msg.type == ELECTION_ACTIVE_TYPE)
         {
             printf("Mensagem de eleição ativa recebida.\n");
-            // printf("esta havendo eleição entendeu Bre booooooor\n");
-            // printf("esta havendo eleição entendeu Bre booooooor\n");
-            // printf("esta havendo eleição entendeu Bre booooooor\n");
             election_in_progress = 1;
         }
     }
@@ -706,7 +683,6 @@ void *send_duplicate_manager_messages(void *arg)
     struct sockaddr_in serv_addr;
     socklen_t servlen = sizeof(serv_addr);
     packet msg;
-
     msg.type = MANAGER_DUPLICATE_TYPE;
     msg.id_unique = participant_id;
 
@@ -740,7 +716,7 @@ void *send_duplicate_manager_messages(void *arg)
             pthread_exit(NULL);
         }
 
-        sleep(2); // Wait for 2 seconds before sending the next message
+        sleep(2);
     }
 
     close(sockfd);
@@ -790,19 +766,15 @@ void *listen_duplicate_manager_messages(void *arg)
         {
             printf("Mensagem de gerente duplicado recebida.\n");
 
-            // Compare participant IDs
             if (participant_id >= msg.id_unique)
             {
-                // This manager should continue running
                 printf("Este gerente continua em execução.\n");
             }
             else if (participant_id < msg.id_unique)
             {
-                // This manager should restart
                 printf("Este gerente deve reiniciar.\n");
-                restart_program(); // Implement this function to restart the program
+                restart_program();
             }
-            // If participant_id == msg.id_unique, do nothing (should not happen in normal circumstances)
         }
     }
 

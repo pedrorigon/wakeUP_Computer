@@ -27,8 +27,6 @@ void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac
     msg._payload = NULL;
     strcpy(msg.mac_address, mac_address);
     char ip_address_participant[16];
-    // inet_ntop(AF_INET, &(addr->sin_addr.s_addr), ip_address_participant, INET_ADDRSTRLEN);
-    /// msg.status = get_participant_status(mac_address); //achei teste
     msg.status = 1;
     server = gethostbyname(ip_address);
     if (!server)
@@ -52,7 +50,6 @@ void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac
 }
 
 // Function to send a discovery message
-
 void send_monitoring_msg(int sockfd, struct sockaddr_in *addr, socklen_t len)
 {
     packet msg;
@@ -139,13 +136,12 @@ void *listen_monitoring(void *args)
     pthread_exit(NULL);
 }
 
-void manager_start_monitoring_service()
+void *manager_start_monitoring_service(void *arg)
 {
     if (should_terminate_threads)
     {
-        return;
+        return NULL;
     }
-
     // Listen for manager broadcast
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct sockaddr_in addr;
@@ -159,9 +155,9 @@ void manager_start_monitoring_service()
     {
         sleep(1); // Pause por um segundo (ou outro período de tempo desejado)
     }
-
     // Encerrar a função e fechar o socket
     close(sockfd);
+    return NULL;
 }
 
 void *listen_Confirmed_monitoring(void *args)
@@ -197,8 +193,6 @@ void *listen_Confirmed_monitoring(void *args)
     socklen_t clilen = sizeof(cli_addr);
     while (!should_terminate_threads)
     {
-
-        // Receive message
         int n = recvfrom(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&cli_addr, &clilen);
         if (n < 0)
         {
@@ -211,9 +205,6 @@ void *listen_Confirmed_monitoring(void *args)
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
             int att_dados = add_participant(hostname, ip_address, msg.mac_address, msg.status, 5);
-            // if(att_dados == 1){
-            //   printf("status permaneceu o mesmo.\n");
-            // }
         }
         else if (msg.type == PROGRAM_EXIT_TYPE)
         {
@@ -224,12 +215,11 @@ void *listen_Confirmed_monitoring(void *args)
     pthread_exit(NULL);
 }
 
-void exit_control()
+void *exit_control(void *arg)
 {
     while (!should_terminate_threads)
     {
         usleep(1000000);
-        printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE222222222222222222222222.\n");
         check_asleep_participant();
     }
 }
@@ -239,23 +229,15 @@ void *monitor_manager_status(void *arg)
     while (should_terminate_threads == 0)
     {
         sleep(1); // Verifica o status do gerente a cada 1 segundo
-        printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE.\n");
-
         int manager_status = get_manager_status();
-
         if (manager_status == 0)
         {
             printf("O manager saiu, iniciando processo de eleição.\n");
             int new_manager = start_election();
             if (new_manager)
             {
-                printf("    MANAGER: %lu\n", current_manager_id);
-                printf("    MeuID: %lu\n", participant_id);
-                // Define a variável de controle para encerrar os threads de participante
                 should_terminate_threads = 1;
-                printf("TESTEEEEEEEEEEEEEEEEEEEEE777777777777777777777777.\n");
             }
         }
-        printf("TESTEEEEEEEEEEEEEEEEEEEE-foraaaaaa.\n");
     }
 }

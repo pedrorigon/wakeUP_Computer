@@ -161,10 +161,8 @@ void *listen_discovery(void *args)
             hints.ai_socktype = SOCK_DGRAM;
             getaddrinfo(manager_hostname, port, &hints, &res);
             inet_ntop(AF_INET, &((struct sockaddr_in *)res->ai_addr)->sin_addr, manager_ip_address, INET_ADDRSTRLEN);
-
             // Adiciona o manager à lista de participantes
             add_participant(manager_hostname, manager_ip_address, mac_adress_manager, 1, PARTICIPANT_TIMEOUT);
-
             send_type_msg(mac_adress_manager, ip_address, RESPONSE_PORT, CONFIRMED_TYPE);
         }
     }
@@ -172,10 +170,9 @@ void *listen_discovery(void *args)
     pthread_exit(NULL);
 }
 
-void participant_start()
+void *participant_start(void *arg)
 {
     // Listen for manager broadcast
-
     struct hostent *host_entry;
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct sockaddr_in addr;
@@ -183,9 +180,7 @@ void participant_start()
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(PORT);
     socklen_t manager_addrlen = sizeof(addr);
-
     char hostname[256], ip_address[16], mac_address[18];
-
     getnameinfo((struct sockaddr *)&addr, manager_addrlen, hostname, sizeof(hostname), NULL, 0, 0);
     inet_ntop(AF_INET, &(addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
     get_mac_address(mac_address);
@@ -200,14 +195,12 @@ void get_mac_address(char *mac_address)
     struct ifconf ifc;
     char buf[1024];
     int success = 0;
-
     int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
     if (sock == -1)
     {
         perror("socket");
         exit(EXIT_FAILURE);
     }
-
     ifc.ifc_len = sizeof(buf);
     ifc.ifc_buf = buf;
     if (ioctl(sock, SIOCGIFCONF, &ifc) == -1)
@@ -355,7 +348,7 @@ void insert_manager_into_participants_table()
     char hostname[256];
     char ip_address[16];
     char mac_address[18];
-    int status = 1; // Defina o status do gerente como ativo
+    int status = 1;
     int time_control = RESPONSE_TIMEOUT;
 
     // Obter o hostname

@@ -216,11 +216,7 @@ void start_participant_threads()
     pthread_join(exit_participants_control, NULL);
     printf("Joining monitor_manager_status_thread\n");
     pthread_join(monitor_manager_status_thread, NULL);
-    printf("Estou aqui hehehe\n");
+
     // Inicia as threads de gerente
-    printf("current_manager_id: %lu, participant_id: %lu\n", current_manager_id, participant_id);
-
     start_manager_threads();
-
-    // pthread_join(confirmed_thread, NULL);
 }

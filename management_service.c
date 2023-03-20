@@ -186,7 +186,6 @@ int get_participant_status(char *mac_address)
 
 int find_participant_by_unique_id(uint64_t unique_id)
 {
-    // pthread_mutex_lock(&participants_mutex);
     int index = -1;
     for (int i = 0; i < num_participants; i++)
     {
@@ -196,7 +195,6 @@ int find_participant_by_unique_id(uint64_t unique_id)
             break;
         }
     }
-    // pthread_mutex_unlock(&participants_mutex);
     return index;
 }
 
@@ -214,7 +212,6 @@ int get_manager_status()
         printf("Error: Manager not found in table.\n");
     }
     pthread_mutex_unlock(&participants_mutex);
-    // printf("statusssssssssssssss %d.\n", status);
     return status;
 }
 
@@ -232,7 +229,6 @@ void check_asleep_participant()
             if (participants[i].unique_id != participant_id)
             {
                 printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE4444444444444444444.\n");
-                // printf("\n%d\n", participants[i].time_control);
                 if (participants[i].time_control > 0)
                 {
                     participants[i].time_control--;
