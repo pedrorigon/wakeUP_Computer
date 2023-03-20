@@ -81,7 +81,7 @@ void send_discovery_msg(int sockfd, struct sockaddr_in *addr, socklen_t len, cha
     setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable));
     addr->sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
-    while (1)
+    while (should_terminate_threads == 0)
     {
         usleep(1000000);
         int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
@@ -175,6 +175,7 @@ void *listen_discovery(void *args)
 void participant_start()
 {
     // Listen for manager broadcast
+
     struct hostent *host_entry;
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     struct sockaddr_in addr;
@@ -185,26 +186,11 @@ void participant_start()
 
     char hostname[256], ip_address[16], mac_address[18];
 
-    // Obtém o hostname
-    // gethostname(hostname, 256);
-
     getnameinfo((struct sockaddr *)&addr, manager_addrlen, hostname, sizeof(hostname), NULL, 0, 0);
     inet_ntop(AF_INET, &(addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-
-    // Obtém informações sobre o host
-    // host_entry = gethostbyname(hostname);
-
-    // Obtém o endereço IP
-    // inet_ntop(AF_INET, &(addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-
-    // getnameinfo((struct sockaddr *)&addr, manager_addrlen, hostname, sizeof(hostname), NULL, 0, 0);
-    // inet_ntop(AF_INET, &(addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
     get_mac_address(mac_address);
-    // printf("o ip aqui eh\n: %s", ip_address);
-    // add_participant_noprint(hostname, ip_address, mac_address, 1, PARTICIPANT_TIMEOUT);
     send_discovery_msg(sockfd, &addr, manager_addrlen, mac_address);
 
-    // send_discovery_msg(sockfd, &addr, manager_addrlen);
     close(sockfd);
 }
 
@@ -313,33 +299,8 @@ void *listen_Confirmed(void *args)
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
-            /*int att_dados = add_participant(hostname, ip_address, msg.mac_address, msg.status);
-            if (att_dados == 0)
-            {
-                // printf("----------------------------------\n");
-                printf("Esse é o endereço de seu Manager!\n");
-                printf("----------------------------------\n");
-            }*/
-            // char mac_address[18];
             if (strcmp(mac_address, msg.mac_address) != 0)
             {
-                /*printf("------------------------------------------------\n");
-                printf("       Esse é o endereço de seu Manager!\n");
-                printf("------------------------------------------------\n");
-                printf("Hostname: %s\n", hostname);
-                printf("IP address: %s\n", ip_address);
-                printf("MAC address: %s\n", msg.mac_address);
-                strcpy(mac_address, msg.mac_address);
-                if (msg.status == 1)
-                {
-                    printf("Status: awaken\n");
-                }
-                else
-                {
-                    printf("Status: asleep\n");
-                }
-                printf("------------------------------------------------\n");
-                printf("\n");*/
                 add_participant_noprint(hostname, ip_address, msg.mac_address, 1, msg.id_unique, 5, 1);
                 update_manager(msg.id_unique);
 

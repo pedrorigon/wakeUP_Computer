@@ -67,7 +67,7 @@ void send_monitoring_msg(int sockfd, struct sockaddr_in *addr, socklen_t len)
     setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable));
     addr->sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
-    while (1)
+    while (should_terminate_threads == 0)
     {
         usleep(1000000);
         int n = sendto(sockfd, &msg, sizeof(packet), 0, (struct sockaddr *)addr, len);
@@ -141,7 +141,6 @@ void *listen_monitoring(void *args)
 
 void manager_start_monitoring_service()
 {
-    // Verifique should_terminate_threads antes de executar a função
     if (should_terminate_threads)
     {
         return;
@@ -154,9 +153,7 @@ void manager_start_monitoring_service()
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(PORT_MONITORING);
     socklen_t manager_addrlen = sizeof(addr);
-
     send_monitoring_msg(sockfd, &addr, manager_addrlen);
-
     // Loop que verifica should_terminate_threads e faz uma pausa
     while (!should_terminate_threads)
     {
@@ -252,18 +249,34 @@ void *monitor_manager_status(void *arg)
             int new_manager = start_election();
             if (new_manager)
             {
-                printf("CHEGOU AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII.\n");
                 // Define a variável de controle para encerrar os threads de participante
                 should_terminate_threads = 1;
+                printf("TESTEEEEEEEEEEEEEEEEEEEEE777777777777777777777777.\n");
+                pthread_cancel(confirmed_thread);
+                pthread_cancel(msg_discovery_thread);
+                pthread_cancel(listen_monitoring_thread);
+                pthread_cancel(user_interface_control);
+                pthread_cancel(exit_participants_control);
+                // pthread_cancel(monitor_manager_status_thread);
+                pthread_cancel(election_listener_thread);
 
+                printf("TESTEEEEEEEEEEEEEEEEEEEEE----ANTES DA CONFIRMED.\n");
                 // Aguarde os threads de participante terminarem
-                pthread_join(confirmed_thread, NULL);
+                printf("TESTEEEEEEEEEEEEEEEEEEEEE----CONFIRMED.\n");
                 pthread_join(msg_discovery_thread, NULL);
+                printf("TESTEEEEEEEEEEEEEEEEEEEEE----DISCOVERY.\n");
                 pthread_join(listen_monitoring_thread, NULL);
+                printf("TESTEEEEEEEEEEEEEEEEEEEEE----LISTEN_MONITORING.\n");
                 pthread_join(user_interface_control, NULL);
+                printf("TESTEEEEEEEEEEEEEEEEEEEEE----USER_INTERFACE.\n");
                 pthread_join(exit_participants_control, NULL);
-
+                printf("TESTEEEEEEEEEEEEEEEEEEEEE----EXIT_PARTICIPANTS.\n");
+                pthread_join(monitor_manager_status_thread, NULL);
+                pthread_join(confirmed_thread, NULL);
+                pthread_join(election_listener_thread, NULL);
+                printf("TESTEEEEEEEEEEEEEEEEEEEEE----ELECTION_LISTENER.\n");
                 // Inicia os threads de gerente
+                printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE777777777777777777777777.\n");
                 start_manager_threads();
             }
             break;
