@@ -96,7 +96,7 @@ void start_manager_threads()
     {
         printf("Error creating listen_discovery thread\n");
     }
-    rc = pthread_create(&manager_check_thread, NULL, listen_manager_check, NULL); // inicia a thread para ouvir as solicitações de verificação do status do gerenciador
+    rc = pthread_create(&manager_check_thread, NULL, listen_manager_check, NULL);
     if (rc)
     {
         printf("Error creating manager_check thread\n");
