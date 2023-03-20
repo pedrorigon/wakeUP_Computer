@@ -139,6 +139,42 @@ int wait_for_responses(int response_timeout)
 }
 
 // Função que responde a uma eleição iniciada por outro processo
+void send_confirm_election(char mac_address[18], char ip_address[16], char hostname[256], int type)
+{
+    packet msg;
+    msg.type = type;
+    memcpy(msg.mac_address, mac_address, sizeof(msg.mac_address));
+
+    struct sockaddr_in serv_addr;
+    memset((char *)&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(CONFIRMATION_ELECTION_PORT);
+    if (inet_aton(ip_address, &serv_addr.sin_addr) == 0)
+    {
+        printf("Invalid IP address: %s", ip_address);
+        return;
+    }
+
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0)
+    {
+        printf("Error opening socket");
+        return;
+    }
+
+    int n = sendto(sockfd, &msg, sizeof(msg), 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    if (n < 0)
+    {
+        printf("Error sending message");
+        return;
+    }
+
+    printf("Mensagem de vitória enviada para %s (%s)\n", hostname, ip_address);
+
+    close(sockfd);
+}
+
+// Função que responde a uma eleição iniciada por outro processo
 void respond_election(char mac_address[18], char ip_address[16], char hostname[256], int type)
 {
     packet msg;
@@ -197,7 +233,7 @@ int wait_for_confirmations(int response_timeout)
     struct sockaddr_in serv_addr;
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(RESPONSE_PORT_ELECTION);
+    serv_addr.sin_port = htons(CONFIRMATION_ELECTION_PORT);
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     // Vincular o socket à porta específica
@@ -318,7 +354,7 @@ void *election_listener(void *arg)
                 update_manager(participants[sender_index].unique_id);
 
                 // Adicione o código para enviar uma mensagem de confirmação
-                respond_election(participants[sender_index].mac_address, participants[sender_index].ip_address, participants[sender_index].hostname, CONFIRMATION_ELECTION_TYPE);
+                send_confirm_election(participants[sender_index].mac_address, participants[sender_index].ip_address, participants[sender_index].hostname, CONFIRMATION_ELECTION_TYPE);
             }
             else
             {

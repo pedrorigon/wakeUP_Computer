@@ -252,6 +252,7 @@ void *monitor_manager_status(void *arg)
             int new_manager = start_election();
             if (new_manager)
             {
+                printf("CHEGOU AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII.\n");
                 // Define a variável de controle para encerrar os threads de participante
                 should_terminate_threads = 1;
 
