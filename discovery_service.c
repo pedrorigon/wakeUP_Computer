@@ -163,7 +163,7 @@ void *listen_discovery(void *args)
             getaddrinfo(manager_hostname, port, &hints, &res);
             inet_ntop(AF_INET, &((struct sockaddr_in *)res->ai_addr)->sin_addr, manager_ip_address, INET_ADDRSTRLEN);
             // Adiciona o manager à lista de participantes
-            add_participant(manager_hostname, manager_ip_address, mac_adress_manager, 1, PARTICIPANT_TIMEOUT);
+            add_participant_noprint(manager_hostname, manager_ip_address, mac_adress_manager, 1, msg.id_unique, PARTICIPANT_TIMEOUT, 1);
             send_type_msg(mac_adress_manager, ip_address, RESPONSE_PORT, CONFIRMED_TYPE);
         }
     }
@@ -278,6 +278,7 @@ void *listen_Confirmed(void *args)
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
     char mac_address[18];
+    get_mac_address(mac_address);
     while (!should_terminate_threads)
     {
 
@@ -342,7 +343,7 @@ void get_local_ip_address(char *ip_address)
                 exit(EXIT_FAILURE);
             }
             puts("Found interface!");
-            return ip_address;
+            return;
             /*
             printf("Got IP %s\n", ip_address);
             //struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
@@ -363,7 +364,7 @@ void get_local_ip_address(char *ip_address)
     }
 
     freeifaddrs(addrs);
-    return NULL;
+    return;
 }
 
 void insert_manager_into_participants_table()
@@ -391,6 +392,7 @@ void insert_manager_into_participants_table()
 
     // unique ID
     uint64_t id_manager = participant_id;
+    current_manager_id = id_manager;
 
     // Adicionar o gerente à tabela de participantes
     add_participant_noprint(hostname, ip_address, mac_address, status, id_manager, time_control, 1);

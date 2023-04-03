@@ -89,7 +89,7 @@ void print_participants()
         printf("    IP address: %s\n", participants[i].ip_address); //to com dificuldade para pegar o ip address do manager
         printf("    MAC address: %s\n", participants[i].mac_address);
         printf("    ID: %08lx\n" , participants[i].unique_id);
-        //printf("    TIME CONTROL: %d\n", participants[i].time_control);
+        printf("    TIME CONTROL: %d\n", participants[i].time_control);
         if (participants[i].status == 1)
         {
             printf("    Status: " GRN "awake\n" reset);

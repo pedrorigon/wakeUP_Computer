@@ -58,32 +58,35 @@ int start_election()
     }
 
     // Aguarde respostas de outros processos
+    puts("Aguardando outros managers se manifestarem...");
     int response_timeout = RESPONSE_TIMEOUT;
     num_responses = wait_for_responses(response_timeout);
 
     if (num_responses == 0)
     {
         announce_victory();
-
-        // Aguarda confirmações de todos os outros processos por um tempo limitado
-        int confirmations_received = 0;
-        time_t start_time = time(NULL);
-        while (difftime(time(NULL), start_time) < RESPONSE_TIMEOUT)
-        {
-            confirmations_received = wait_for_confirmations(RESPONSE_TIMEOUT);
-
-            if (confirmations_received == num_participants - 1)
-            {
-                update_manager(participant_id);
-                became_leader = 1;
-                break;
-            }
-        }
-
-        if (!became_leader)
-        {
+        if(!num_participants) {
+            puts("!became_leader as I'm the only one!");
             update_manager(participant_id);
             became_leader = 1;
+        } else {
+            // Aguarda confirmações de todos os outros processos por um tempo limitado
+            int confirmations_received = 0;
+            time_t start_time = time(NULL);
+
+            while (difftime(time(NULL), start_time) < RESPONSE_TIMEOUT)
+            {
+                printf("Waiting for %d confirmations...\n", num_participants - 1);
+                confirmations_received = wait_for_confirmations(RESPONSE_TIMEOUT);
+                printf("Received %d confirmations\n", confirmations_received);
+                if (confirmations_received == num_participants - 1)
+                {
+                    puts("became leader on internal clause!");
+                    update_manager(participant_id);
+                    became_leader = 1;
+                    break;
+                }
+            }
         }
     }
     election_in_progress = 0;
@@ -254,6 +257,7 @@ int wait_for_confirmations(int response_timeout)
         {
             if (msg.type == CONFIRMATION_ELECTION_TYPE)
             {
+                puts("Confirmation received");
                 confirmations_received++;
             }
         }
@@ -345,13 +349,13 @@ void *election_listener(void *arg)
         {
             if (participants[sender_index].unique_id > participant_id)
             {
-                //printf("Mensagem de vitória recebida de %s\n", participants[sender_index].hostname);
+                printf("Mensagem de vitória recebida de %s\n", participants[sender_index].hostname);
                 update_manager(participants[sender_index].unique_id);
                 send_confirm_election(participants[sender_index].mac_address, participants[sender_index].ip_address, participants[sender_index].hostname, CONFIRMATION_ELECTION_TYPE);
             }
             else
             {
-                //printf("Ignorando mensagem de vitória de %s (ID menor ou igual)\n", participants[sender_index].hostname);
+                printf("Ignorando mensagem de vitória de %s (ID menor ou igual)\n", participants[sender_index].hostname);
             }
         }
     }

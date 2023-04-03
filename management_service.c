@@ -57,6 +57,7 @@ int add_participant(char *hostname, char *ip_address, char *mac_address, int sta
 void add_participant_noprint(char *hostname, char *ip_address, char *mac_address, int status, uint64_t unique_id, int time_control, int is_manager)
 {
     pthread_mutex_lock(&participants_mutex);
+    //if(is_manager) current_manager_id = unique_id;
     int index = find_participant(mac_address);
     if (index != -1)
     {
@@ -152,6 +153,7 @@ int find_participant_by_hostname(char *hostname)
 void update_manager(uint64_t new_manager_id)
 {
     pthread_mutex_lock(&participants_mutex);
+    puts("Inserting new manager");
     current_manager_id = new_manager_id;
     for (int i = 0; i < num_participants; i++)
     {
