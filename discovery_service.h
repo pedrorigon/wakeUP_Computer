@@ -28,5 +28,5 @@ void get_mac_address(char *mac_address);
 void *listen_Confirmed(void *args);
 void send_confirmed_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16]);
 void insert_manager_into_participants_table();
-char *get_local_ip_address();
+void get_local_ip_address(char *ip_address);
 #endif

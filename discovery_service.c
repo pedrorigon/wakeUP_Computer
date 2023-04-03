@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "structs.h"
 #include <pthread.h>
 #include <unistd.h>
@@ -148,7 +149,7 @@ void *listen_discovery(void *args)
             int index = find_participant(msg.mac_address);
             if (index == -1) // não achou na lista
             {
-                add_participant(hostname, ip_address, msg.mac_address, msg.status, PARTICIPANT_TIMEOUT);
+                add_participant_noprint(hostname, ip_address, msg.mac_address, msg.status, msg.id_unique, PARTICIPANT_TIMEOUT, 0);
             }
             char mac_adress_manager[18];
             char manager_hostname[256], manager_ip_address[16];
@@ -309,10 +310,9 @@ void *listen_Confirmed(void *args)
     pthread_exit(NULL);
 }
 
-char *get_local_ip_address()
+void get_local_ip_address(char *ip_address)
 {
     struct ifaddrs *addrs, *tmp;
-    char *ip_address = malloc(INET_ADDRSTRLEN);
 
     if (getifaddrs(&addrs) != 0)
     {
@@ -326,8 +326,27 @@ char *get_local_ip_address()
     {
         if (tmp->ifa_addr != NULL && tmp->ifa_addr->sa_family == AF_INET)
         {
-            struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
-            strcpy(ip_address, inet_ntoa(((struct sockaddr_in *)tmp->ifa_addr)->sin_addr));
+            if(tmp->ifa_flags & IFF_LOOPBACK) {
+                tmp = tmp->ifa_next;
+                puts("Found loopback");
+                continue;
+            }
+            if(!(tmp->ifa_flags & IFF_UP)) {
+                tmp = tmp->ifa_next;
+                puts("Found down interface");
+                continue;
+            }
+            int s = getnameinfo(tmp->ifa_addr, sizeof(struct sockaddr_in), ip_address, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+            if (s != 0) {
+                printf("getnameinfo() failed: %s\n", gai_strerror(s));
+                exit(EXIT_FAILURE);
+            }
+            puts("Found interface!");
+            return ip_address;
+            /*
+            printf("Got IP %s\n", ip_address);
+            //struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
+            //strcpy(ip_address, inet_ntoa(((struct sockaddr_in *)tmp->ifa_addr)->sin_addr));
 
             if (strncmp(ip_address, "192.168.", 8) == 0)
             {
@@ -338,9 +357,8 @@ char *get_local_ip_address()
             {
                 freeifaddrs(addrs);
                 return ip_address;
-            }
+            }*/
         }
-
         tmp = tmp->ifa_next;
     }
 
@@ -351,7 +369,7 @@ char *get_local_ip_address()
 void insert_manager_into_participants_table()
 {
     char hostname[256];
-    char ip_address[16];
+    char ip_address[INET_ADDRSTRLEN];
     char mac_address[18];
     int status = 1;
     int time_control = RESPONSE_TIMEOUT;
@@ -365,6 +383,8 @@ void insert_manager_into_participants_table()
 
     // obter o ip_address
     get_local_ip_address(ip_address);
+    printf("My IP is %s\n", ip_address);
+    usleep(5*1000*1000);
 
     // Obter endereço MAC
     get_mac_address(mac_address);

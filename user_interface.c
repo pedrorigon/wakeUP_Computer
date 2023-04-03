@@ -63,10 +63,10 @@ void arte_inicial(void)
 void print_participants()
 {
     if(current_manager_id == participant_id) {
-        printf(BMAG " Sou o Manager\n" reset);
+        printf(MAGHB " MANAGER \n" reset);
         printf(BWHT "    MeuID: %08lx\n\n", participant_id);
     } else {
-        printf(BCYN " Sou um participante\n" reset);
+        printf(CYNHB " PARTICIPANTE \n" reset);
         printf(BWHT "    MeuID: %08lx\n", participant_id);
         printf(BWHT "    ManagerID: %08lx\n\n", current_manager_id);
     }
@@ -77,23 +77,19 @@ void print_participants()
     printf(" ------------------------------------------------\n\n");
     for (int i = 0; i < num_participants; i++)
     {
+        
         if (participants[i].unique_id == current_manager_id)
         {
-            printf(BWHT "    Participante: %d \n" reset, i + 1);
-            printf(RED "    Sou o Manager da aplicação nesse momento!\n" reset);
-            printf("    Hostname: %s\n", participants[i].hostname);
-            // printf(BWHT "    IP address: %s\n", participants[i].ip_address); //to com dificuldade para pegar o ip address do manager
-            printf("    MAC address: %s\n", participants[i].mac_address);
-            printf("    ID: %08lx\n" , participants[i].unique_id);
-            printf("    TIME CONTROL: %d\n", participants[i].time_control);
+            printf(BWHT "    Participante %d" reset RED " MANAGER\n" reset, i + 1);
+
+        } else {
+            printf(BWHT "    Participante %d \n" reset, i + 1);
         }
-        else
-        {
-            printf(BWHT "  Participante: %d \n" reset, i + 1);
-            printf("    Hostname: %s\n", participants[i].hostname);
-            printf("    IP address: %s\n", participants[i].ip_address);
-            printf("    MAC address: %s\n", participants[i].mac_address);
-        }
+        printf("    Hostname: %s\n", participants[i].hostname);
+        printf("    IP address: %s\n", participants[i].ip_address); //to com dificuldade para pegar o ip address do manager
+        printf("    MAC address: %s\n", participants[i].mac_address);
+        printf("    ID: %08lx\n" , participants[i].unique_id);
+        //printf("    TIME CONTROL: %d\n", participants[i].time_control);
         if (participants[i].status == 1)
         {
             printf("    Status: " GRN "awake\n" reset);

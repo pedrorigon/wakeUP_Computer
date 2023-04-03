@@ -171,11 +171,13 @@ void start_participant_threads()
     {
         printf("Error creating user_interface thread\n");
     }
+    /*
     rc = pthread_create(&exit_participants_control, NULL, exit_control, NULL);
     if (rc)
     {
         printf("Error creating exit_participants thread\n");
     }
+    */
     rc = pthread_create(&monitor_manager_status_thread, NULL, monitor_manager_status, NULL);
     if (rc)
     {
@@ -206,8 +208,8 @@ void start_participant_threads()
     pthread_cancel(listen_monitoring_thread);
     printf("Canceling user_interface_control\n");
     pthread_cancel(user_interface_control);
-    printf("Canceling exit_participants_control\n");
-    pthread_cancel(exit_participants_control);
+    //printf("Canceling exit_participants_control\n");
+    //pthread_cancel(exit_participants_control);
     printf("Canceling monitor_manager_status_thread\n");
     pthread_cancel(monitor_manager_status_thread);
 
@@ -223,8 +225,8 @@ void start_participant_threads()
     pthread_join(listen_monitoring_thread, NULL);
     printf("Joining user_interface_control\n");
     pthread_join(user_interface_control, NULL);
-    printf("Joining exit_participants_control\n");
-    pthread_join(exit_participants_control, NULL);
+    //printf("Joining exit_participants_control\n");
+    //pthread_join(exit_participants_control, NULL);
     printf("Joining monitor_manager_status_thread\n");
     pthread_join(monitor_manager_status_thread, NULL);
 
