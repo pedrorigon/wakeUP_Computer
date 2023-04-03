@@ -51,8 +51,9 @@ int start_election()
     {
         if (participants[i].unique_id > participant_id)
         {
-            // Envia mensagem de eleição para processos com ID maior
-            send_election_message(participants[i]);
+            // Envia mensagem de eleição para processos com ID maior, se tivermos um IP válido
+            if(participants[i].ip_address[0])
+                send_election_message(participants[i]);
         }
     }
 
@@ -295,8 +296,8 @@ void *election_listener(void *arg)
     {
         if (!message_shown)
         {
-            printf("Aguardando mensagens de eleição...\n");
-            printf("\n");
+            //printf("Aguardando mensagens de eleição...\n");
+            //printf("\n");
             message_shown = 1;
         }
         struct sockaddr_in cli_addr;
@@ -313,7 +314,7 @@ void *election_listener(void *arg)
         int sender_index = find_participant(msg.mac_address);
         if (sender_index == -1)
         {
-            printf("Participante desconhecido enviou uma mensagem de eleição.");
+            //printf("Participante desconhecido enviou uma mensagem de eleição.");
             continue;
         }
 
@@ -326,7 +327,7 @@ void *election_listener(void *arg)
         {
             if (!election_in_progress)
             {
-                printf("Mensagem de eleição recebida de %s\n", participants[sender_index].hostname);
+                //printf("Mensagem de eleição recebida de %s\n", participants[sender_index].hostname);
 
                 char sender_mac_address[18];
                 strcpy(sender_mac_address, participants[sender_index].mac_address);
@@ -344,13 +345,13 @@ void *election_listener(void *arg)
         {
             if (participants[sender_index].unique_id > participant_id)
             {
-                printf("Mensagem de vitória recebida de %s\n", participants[sender_index].hostname);
+                //printf("Mensagem de vitória recebida de %s\n", participants[sender_index].hostname);
                 update_manager(participants[sender_index].unique_id);
                 send_confirm_election(participants[sender_index].mac_address, participants[sender_index].ip_address, participants[sender_index].hostname, CONFIRMATION_ELECTION_TYPE);
             }
             else
             {
-                printf("Ignorando mensagem de vitória de %s (ID menor ou igual)\n", participants[sender_index].hostname);
+                //printf("Ignorando mensagem de vitória de %s (ID menor ou igual)\n", participants[sender_index].hostname);
             }
         }
     }
@@ -372,6 +373,7 @@ void send_election_message(participant receiver)
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT_ELECTION);
+    printf("electrion receiver: %s\n", receiver.ip_address);
 
     if (inet_aton(receiver.ip_address, &serv_addr.sin_addr) == 0)
     {
@@ -392,7 +394,7 @@ void send_election_message(participant receiver)
 
 void check_for_manager(int *found_manager)
 {
-    printf("Procurando por um manager...\n");
+    //printf("Procurando por um manager...\n");
 
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0)
@@ -447,7 +449,7 @@ void check_for_manager(int *found_manager)
     n = recvfrom(sockfd, &response, sizeof(response), 0, (struct sockaddr *)&cli_addr, &clilen);
     if (n > 0 && response.type == MANAGER_RESPONSE_CHECK_TYPE)
     {
-        printf("Manager encontrado!.\n");
+        //printf("Manager encontrado!.\n");
         *found_manager = 1; // encontrou um manager
     }
     else
@@ -521,7 +523,7 @@ int participant_decision()
     check_for_manager(&found_manager);
     if (!found_manager)
     {
-        printf("Manager não encontrado, verificando se há uma eleição em andamento.\n");
+        //printf("Manager não encontrado, verificando se há uma eleição em andamento.\n");
         int found_manager = 0;
         srand(time(NULL) ^ (participant_id << 16));
 
@@ -540,8 +542,8 @@ int participant_decision()
 
             if (!found_manager)
             {
-                printf("Nenhuma eleição em andamento, iniciando eleição.\n");
-                printf("A VARAIVEL ELECTION IN PROGRESS VALE X: %d\n", election_in_progress);
+                //printf("Nenhuma eleição em andamento, iniciando eleição.\n");
+                //printf("A VARAIVEL ELECTION IN PROGRESS VALE X: %d\n", election_in_progress);
                 if (election_in_progress == 0)
                 {
                     int became_manager = start_election();
@@ -571,7 +573,7 @@ int participant_decision()
     }
     else
     {
-        printf("Manager encontrado, iniciando como participante.\n");
+        //printf("Manager encontrado, iniciando como participante.\n");
         return 0; // Retorna 0 para indicar que o processo será iniciado como participante
     }
 
@@ -620,7 +622,7 @@ void send_election_active_message()
 
     packet msg;
     msg.type = ELECTION_ACTIVE_TYPE;
-    printf("participant_id2: %lu \n", participant_id);
+    //printf("participant_id2: %lu \n", participant_id);
 
     if (sendto(sockfd, (const void *)&msg, sizeof(msg), 0, (const struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
@@ -669,7 +671,7 @@ void *election_active_listener(void *arg)
 
         if (msg.type == ELECTION_ACTIVE_TYPE)
         {
-            printf("Mensagem de eleição ativa recebida.\n");
+            //printf("Mensagem de eleição ativa recebida.\n");
             election_in_progress = 1;
         }
     }
@@ -689,7 +691,7 @@ void *send_duplicate_manager_messages(void *arg)
     // Create socket
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
     {
-        printf("Error opening socket");
+        //printf("Error opening socket");
         pthread_exit(NULL);
     }
 
@@ -764,7 +766,7 @@ void *listen_duplicate_manager_messages(void *arg)
 
         if (msg.type == MANAGER_DUPLICATE_TYPE)
         {
-            printf("Mensagem de gerente duplicado recebida.\n");
+            //printf("Mensagem de gerente duplicado recebida.\n");
 
             if (participant_id >= msg.id_unique)
             {
@@ -792,6 +794,11 @@ void restart_program()
         perror("Error getting program path");
         exit(EXIT_FAILURE);
     }
+
+    // Clean sockets before execv
+    size_t n = sysconf(_SC_OPEN_MAX);
+    for(size_t i = 3; i < n; i++)
+        close(i);
 
     path[len] = '\0';
 

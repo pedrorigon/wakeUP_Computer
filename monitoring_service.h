@@ -23,6 +23,7 @@ extern pthread_t user_interface_control;
 extern pthread_t exit_participants_control;
 extern pthread_t monitor_manager_status_thread;
 extern pthread_t election_listener_thread;
+extern pthread_t synchronization_client_thread;
 extern int should_terminate_threads;
 
 void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac_address[18], char ip_address[16]);

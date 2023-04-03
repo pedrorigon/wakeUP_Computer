@@ -25,3 +25,4 @@ int get_participant_status(char *mac_address);
 void check_asleep_participant();
 int find_participant_by_unique_id(uint64_t unique_id);
 int get_manager_status();
+void sync_local_participants(participant new_table[MAX_PARTICIPANTS]);

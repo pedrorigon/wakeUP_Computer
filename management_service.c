@@ -225,10 +225,10 @@ void check_asleep_participant()
         int remove_count = 0;
         for (int i = 0; i < num_participants; i++)
         {
-            printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE333333333333333333333.\n");
+            //printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE333333333333333333333.\n");
             if (participants[i].unique_id != participant_id)
             {
-                printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE4444444444444444444.\n");
+                //printf("TESTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE4444444444444444444.\n");
                 if (participants[i].time_control > 0)
                 {
                     participants[i].time_control--;
@@ -248,4 +248,14 @@ void check_asleep_participant()
 
         sem_post(&sem_update_interface);
     }
+}
+
+void sync_local_participants(participant new_table[MAX_PARTICIPANTS])
+{
+    pthread_mutex_lock(&participants_mutex);
+    memcpy(participants, new_table, sizeof(participants));
+    num_participants = 0;
+    while(participants[num_participants].mac_address[0]) num_participants++;
+    pthread_mutex_unlock(&participants_mutex);
+    sem_post(&sem_update_interface);
 }

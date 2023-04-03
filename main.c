@@ -15,6 +15,7 @@
 #include "monitoring_service.h"
 #include "user_interface.h"
 #include "election_service.h"
+#include "synchronization_service.h"
 
 void sig_handler(int);
 
@@ -91,6 +92,7 @@ void start_manager_threads()
     pthread_t listen_duplicate_manager_thread;
     pthread_t send_duplicate_manager_thread;
     pthread_t exit_participants_control;
+    pthread_t synchronization_manager_thread;
 
     int rc = pthread_create(&discovery_thread, NULL, listen_discovery, NULL);
     if (rc)
@@ -131,6 +133,11 @@ void start_manager_threads()
     {
         printf("Error creating send_duplicate_manager_messages thread");
     }
+    if (pthread_create(&synchronization_manager_thread, NULL, syncrhonization_manager, NULL) != 0)
+    {
+        printf("Error creating synchronization_manager_thread thread");
+    }
+
 
     pthread_join(discovery_thread, NULL);
 }
@@ -173,6 +180,10 @@ void start_participant_threads()
     if (rc)
     {
         printf("Error creating monitor_manager_status thread\n");
+    }
+    if (pthread_create(&synchronization_client_thread, NULL, syncrhonization_client, NULL) != 0)
+    {
+        printf("Error creating synchronization_manager_thread thread");
     }
     while (!should_terminate_threads)
     {

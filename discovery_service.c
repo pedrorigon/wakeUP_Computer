@@ -125,8 +125,8 @@ void *listen_discovery(void *args)
     {
         if (!message_shown)
         {
-            printf("Aguardando um novo participante entrar...\n");
-            printf("\n");
+            //printf("Aguardando um novo participante entrar...\n");
+            //printf("\n");
             message_shown = 1;
         }
         struct sockaddr_in cli_addr;
@@ -330,6 +330,11 @@ char *get_local_ip_address()
             strcpy(ip_address, inet_ntoa(((struct sockaddr_in *)tmp->ifa_addr)->sin_addr));
 
             if (strncmp(ip_address, "192.168.", 8) == 0)
+            {
+                freeifaddrs(addrs);
+                return ip_address;
+            }
+            if (strncmp(ip_address, "10.", 3) == 0)
             {
                 freeifaddrs(addrs);
                 return ip_address;

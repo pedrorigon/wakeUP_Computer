@@ -62,21 +62,30 @@ void arte_inicial(void)
 
 void print_participants()
 {
-    printf(BWHT "    MANAGER: %lu\n", current_manager_id);
-    printf(BWHT "    MeuID: %lu\n", participant_id);
-    printf(BHWHT " LISTA DE PARTICIPANTES: \n\n" reset);
+    if(current_manager_id == participant_id) {
+        printf(BMAG " Sou o Manager\n" reset);
+        printf(BWHT "    MeuID: %08lx\n\n", participant_id);
+    } else {
+        printf(BCYN " Sou um participante\n" reset);
+        printf(BWHT "    MeuID: %08lx\n", participant_id);
+        printf(BWHT "    ManagerID: %08lx\n\n", current_manager_id);
+    }
+    
+    
+
+    printf(BHWHT " Participantes: \n\n" reset);
     printf(" ------------------------------------------------\n\n");
     for (int i = 0; i < num_participants; i++)
     {
         if (participants[i].unique_id == current_manager_id)
         {
             printf(BWHT "    Participante: %d \n" reset, i + 1);
-            printf(RED "    Sou o Manager da aplicação nesse momento!\n");
-            printf(BWHT "    Hostname: %s\n", participants[i].hostname);
+            printf(RED "    Sou o Manager da aplicação nesse momento!\n" reset);
+            printf("    Hostname: %s\n", participants[i].hostname);
             // printf(BWHT "    IP address: %s\n", participants[i].ip_address); //to com dificuldade para pegar o ip address do manager
-            printf(BWHT "    MAC address: %s\n", participants[i].mac_address);
-            printf(BWHT "    ID: %lu\n", participants[i].unique_id);
-            printf(BWHT "    TIME CONTROL: %d\n", participants[i].time_control);
+            printf("    MAC address: %s\n", participants[i].mac_address);
+            printf("    ID: %08lx\n" , participants[i].unique_id);
+            printf("    TIME CONTROL: %d\n", participants[i].time_control);
         }
         else
         {
@@ -87,17 +96,14 @@ void print_participants()
         }
         if (participants[i].status == 1)
         {
-            if (participants[i].time_control > PARTICIPANT_TIMEOUT / 2)
-                printf("    Status: " GRN "awaken\n" reset);
-            else
-                printf("    Status: " YEL "timing out\n" reset);
+            printf("    Status: " GRN "awake\n" reset);
         }
         else
         {
 
             printf("    Status: " CYN "asleep\n" reset);
         }
-        printf("\n ------------------------------------------------\n\n");
+        printf("\n ------------------------------------------------\n");
     }
     printf("\n\n");
 }
@@ -116,17 +122,14 @@ void print_manager(void)
         printf("    MAC address: %s\n", manager.mac_address);
         if (manager.status == 1)
         {
-            if (manager.time_control > PARTICIPANT_TIMEOUT / 2)
-                printf("    Status: " GRN "awaken\n" reset);
-            else
-                printf("    Status: " YEL "timing out\n" reset);
+            printf("    Status: " GRN "awaken\n" reset);
         }
         else
         {
 
             printf("    Status: " CYN "asleep\n" reset);
         }
-        printf("\n ------------------------------------------------\n\n");
+        puts("");
     }
 }
 
