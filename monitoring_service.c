@@ -48,6 +48,7 @@ void send_confirmed_status_msg(struct sockaddr_in *addr, socklen_t len, char mac
     {
         printf("ERROR on sendto");
     }
+    close(sockfd);
 }
 
 // Function to send a discovery message

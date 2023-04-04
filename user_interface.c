@@ -64,11 +64,11 @@ void print_participants()
 {
     if(current_manager_id == participant_id) {
         printf(MAGHB " MANAGER \n" reset);
-        printf(BWHT "    MeuID: %d\n\n", participant_id);
+        printf(BWHT "    MeuID: %08lx\n\n", participant_id);
     } else {
         printf(CYNHB " PARTICIPANTE \n" reset);
-        printf(BWHT "    MeuID: %d\n", participant_id);
-        printf(BWHT "    ManagerID: %d\n\n", current_manager_id);
+        printf(BWHT "    MeuID: %08lx\n", participant_id);
+        printf(BWHT "    ManagerID: %08lx\n\n", current_manager_id);
     }
     
     
@@ -88,8 +88,8 @@ void print_participants()
         printf("    Hostname: %s\n", participants[i].hostname);
         printf("    IP address: %s\n", participants[i].ip_address); //to com dificuldade para pegar o ip address do manager
         printf("    MAC address: %s\n", participants[i].mac_address);
-        printf("    ID: %d\n" , participants[i].unique_id);
-        printf("    TIME CONTROL: %d\n", participants[i].time_control);
+        //printf("    ID: %d\n" , participants[i].unique_id);
+        //printf("    TIME CONTROL: %d\n", participants[i].time_control);
         if (participants[i].status == 1)
         {
             printf("    Status: " GRN "awake\n" reset);

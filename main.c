@@ -146,28 +146,28 @@ void start_participant_threads()
         sleep(1);
     }
 
-    printf("Canceling confirmed_thread\n");
+    //printf("Canceling confirmed_thread\n");
     pthread_cancel(confirmed_thread);
-    printf("Canceling msg_discovery_thread\n");
+    //printf("Canceling msg_discovery_thread\n");
     pthread_cancel(msg_discovery_thread);
-    printf("Canceling listen_monitoring_thread\n");
+    //printf("Canceling listen_monitoring_thread\n");
     pthread_cancel(listen_monitoring_thread);
-    printf("Canceling user_interface_control\n");
+    //printf("Canceling user_interface_control\n");
     pthread_cancel(user_interface_control);
-    printf("Canceling synchronization_client_thread\n");
+    //printf("Canceling synchronization_client_thread\n");
     pthread_cancel(synchronization_client_thread);
 
     sleep(1);
     // Aguarda a finalização das threads
-    printf("Joining confirmed_thread\n");
+    //printf("Joining confirmed_thread\n");
     pthread_join(confirmed_thread, NULL);
-    printf("Joining msg_discovery_thread\n");
+    //printf("Joining msg_discovery_thread\n");
     pthread_join(msg_discovery_thread, NULL);
-    printf("Joining listen_monitoring_thread\n");
+    //printf("Joining listen_monitoring_thread\n");
     pthread_join(listen_monitoring_thread, NULL);
-    printf("Joining user_interface_control\n");
+    //printf("Joining user_interface_control\n");
     pthread_join(user_interface_control, NULL);
-    printf("Joining synchronization_client_thread\n");
+    //printf("Joining synchronization_client_thread\n");
     pthread_join(synchronization_client_thread, NULL);
 
     // Inicia as threads de gerente

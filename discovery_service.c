@@ -57,7 +57,7 @@ void send_goodbye_msg(void)
     int manager = find_participant_by_unique_id(current_manager_id);
     if (manager == -1)
     {
-        puts("Sem manager!");
+        //puts("Sem manager!");
         return;
     }
 
@@ -249,6 +249,7 @@ void get_mac_address(char *mac_address)
                 (unsigned char)formatted_mac_address[5]);
         strcpy(mac_address, formatted_mac_address);
     }
+    close(sock);
 }
 
 void *listen_Confirmed(void *args)
@@ -326,12 +327,12 @@ void get_local_ip_address(char *ip_address)
         {
             if(tmp->ifa_flags & IFF_LOOPBACK) {
                 tmp = tmp->ifa_next;
-                puts("Found loopback");
+                //puts("Found loopback");
                 continue;
             }
             if(!(tmp->ifa_flags & IFF_UP)) {
                 tmp = tmp->ifa_next;
-                puts("Found down interface");
+                //puts("Found down interface");
                 continue;
             }
             int s = getnameinfo(tmp->ifa_addr, sizeof(struct sockaddr_in), ip_address, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
@@ -339,7 +340,7 @@ void get_local_ip_address(char *ip_address)
                 printf("getnameinfo() failed: %s\n", gai_strerror(s));
                 exit(EXIT_FAILURE);
             }
-            puts("Found interface!");
+            //puts("Found interface!");
             return;
             /*
             printf("Got IP %s\n", ip_address);
@@ -381,7 +382,7 @@ void insert_manager_into_participants_table()
 
     // obter o ip_address
     get_local_ip_address(ip_address);
-    printf("My IP is %s\n", ip_address);
+    //printf("My IP is %s\n", ip_address);
     usleep(5*1000*1000);
 
     // Obter endereço MAC
