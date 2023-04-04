@@ -49,11 +49,13 @@ void send_type_msg(char mac_address[18], char ip_address[16], int port, int msg_
     {
         printf("ERROR on sendto");
     }
+    close(sockfd);
 }
 
 void send_goodbye_msg(void)
 {
-    if (!manager.status)
+    int manager = find_participant_by_unique_id(current_manager_id);
+    if (manager == -1)
     {
         puts("Sem manager!");
         return;
@@ -61,8 +63,9 @@ void send_goodbye_msg(void)
 
     char mac_adress[18];
     get_mac_address(mac_adress);
+    
 
-    send_type_msg(mac_adress, manager.ip_address, RESPONSE_PORT_MONITORING, PROGRAM_EXIT_TYPE);
+    send_type_msg(mac_adress, participants[manager].ip_address, RESPONSE_PORT_MONITORING, PROGRAM_EXIT_TYPE);
 }
 
 // Function to send a discovery message
@@ -298,12 +301,6 @@ void *listen_Confirmed(void *args)
             {
                 add_participant_noprint(hostname, ip_address, msg.mac_address, 1, msg.id_unique, 5, 1);
                 update_manager(msg.id_unique);
-
-                strcpy(manager.hostname, hostname);
-                strcpy(manager.ip_address, ip_address);
-                strcpy(manager.mac_address, msg.mac_address);
-                manager.status = 1;
-                sem_post(&sem_update_interface);
             }
         }
     }

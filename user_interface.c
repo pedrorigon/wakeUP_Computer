@@ -64,11 +64,11 @@ void print_participants()
 {
     if(current_manager_id == participant_id) {
         printf(MAGHB " MANAGER \n" reset);
-        printf(BWHT "    MeuID: %08lx\n\n", participant_id);
+        printf(BWHT "    MeuID: %d\n\n", participant_id);
     } else {
         printf(CYNHB " PARTICIPANTE \n" reset);
-        printf(BWHT "    MeuID: %08lx\n", participant_id);
-        printf(BWHT "    ManagerID: %08lx\n\n", current_manager_id);
+        printf(BWHT "    MeuID: %d\n", participant_id);
+        printf(BWHT "    ManagerID: %d\n\n", current_manager_id);
     }
     
     
@@ -78,7 +78,7 @@ void print_participants()
     for (int i = 0; i < num_participants; i++)
     {
         
-        if (participants[i].unique_id == current_manager_id)
+        if (participants[i].is_manager)
         {
             printf(BWHT "    Participante %d" reset RED " MANAGER\n" reset, i + 1);
 
@@ -88,7 +88,7 @@ void print_participants()
         printf("    Hostname: %s\n", participants[i].hostname);
         printf("    IP address: %s\n", participants[i].ip_address); //to com dificuldade para pegar o ip address do manager
         printf("    MAC address: %s\n", participants[i].mac_address);
-        printf("    ID: %08lx\n" , participants[i].unique_id);
+        printf("    ID: %d\n" , participants[i].unique_id);
         printf("    TIME CONTROL: %d\n", participants[i].time_control);
         if (participants[i].status == 1)
         {
@@ -102,31 +102,6 @@ void print_participants()
         printf("\n ------------------------------------------------\n");
     }
     printf("\n\n");
-}
-
-void print_manager(void)
-{
-    if (!manager.status)
-    {
-        printf(YEL " Aguardando manager...\n" reset);
-    }
-    else
-    {
-        printf(GRN " Manager adquirido\n" reset);
-        printf("    Hostname: %s\n", manager.hostname);
-        printf("    IP address: %s\n", manager.ip_address);
-        printf("    MAC address: %s\n", manager.mac_address);
-        if (manager.status == 1)
-        {
-            printf("    Status: " GRN "awaken\n" reset);
-        }
-        else
-        {
-
-            printf("    Status: " CYN "asleep\n" reset);
-        }
-        puts("");
-    }
 }
 
 void *user_interface_manager_thread(void *args)
@@ -226,7 +201,6 @@ void *user_interface_participant_thread(void *args)
         clear();
         arte_inicial();
         print_participants();
-        print_manager();
         puts(" Pressione c para entrar em modo de comando");
         while (!kbhit() && sem_trywait(&sem_update_interface))
         {
@@ -242,7 +216,6 @@ void *user_interface_participant_thread(void *args)
             arte_inicial();
             puts(BWHT " Modo comando (EXIT)" reset);
             print_participants();
-            print_manager();
             int valid_command = 0;
             char buffer[255] = {0};
             while (!valid_command)

@@ -6,8 +6,9 @@
 extern sem_t sem_update_interface;
 extern participant participants[MAX_PARTICIPANTS];
 extern int num_participants;
-extern participant manager;
 extern int should_terminate_threads;
+extern uint64_t participant_id;
+extern uint64_t current_manager_id;
 
 void *user_interface_manager_thread(void *);
 void *user_interface_participant_thread(void *);

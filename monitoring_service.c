@@ -202,6 +202,7 @@ void *listen_Confirmed_monitoring(void *args)
         }
         if (msg.type == CONFIRMED_STATUS_TYPE)
         {
+            if(msg.id_unique == participant_id) continue;
             char hostname[256], ip_address[16];
             getnameinfo((struct sockaddr *)&cli_addr, clilen, hostname, sizeof(hostname), NULL, 0, 0);
             inet_ntop(AF_INET, &(cli_addr.sin_addr.s_addr), ip_address, INET_ADDRSTRLEN);
@@ -222,23 +223,5 @@ void *exit_control(void *arg)
     {
         usleep(1000000);
         check_asleep_participant();
-    }
-}
-
-void *monitor_manager_status(void *arg)
-{
-    while (should_terminate_threads == 0)
-    {
-        sleep(1); // Verifica o status do gerente a cada 1 segundo
-        int manager_status = get_manager_status();
-        if (manager_status == -1)
-        {
-            printf("O manager saiu, iniciando processo de eleição.\n");
-            int new_manager = start_election();
-            if (new_manager)
-            {
-                should_terminate_threads = 1;
-            }
-        }
     }
 }
