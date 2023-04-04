@@ -112,11 +112,11 @@ void *election_server(void *)
             // Block others with smaller ids of becoming managers
             if (msg.id_unique < participant_id)
                 send_message(ANSWER_TYPE);
-            puts("Received election probe");
+            //puts("Received election probe");
             break;
         case ALIVE_TYPE:
             // Keep track whether the manager is alive
-            puts("Received keep-alive");
+            //puts("Received keep-alive");
             manager_last_alive = time(NULL);
             if (msg.id_unique != current_manager_id)
                 update_manager(current_manager_id);
@@ -125,12 +125,12 @@ void *election_server(void *)
             break;
         case ANSWER_TYPE:
             // Our election probe was contested and we won't become managers
-            puts("Received answer");
+            //puts("Received answer");
             if (msg.id_unique > participant_id)
                 election_contested = 1;
             break;
         case VICTORY_TYPE:
-            printf("New manager %08lx\n", current_manager_id);
+            //printf("New manager %08lx\n", current_manager_id);
             update_manager(current_manager_id);
             break;
         default:
@@ -151,12 +151,12 @@ int start_election()
     sleep(TIMEOUT_VALUE);
     if (election_contested)
     {
-        puts("I won't be the manager...");
+        //puts("I won't be the manager...");
         return 0;
     }
     else
     {
-        puts("I'm the manager!");
+        //puts("I'm the manager!");
         update_manager(participant_id);
         send_message(VICTORY_TYPE);
         return 1;
@@ -170,7 +170,8 @@ int participant_decision(void) {
         puts("Found one!");
         return 0;
     } else {
-        return start_election;
+        puts("Didn't find one... Starting an election!");
+        //return start_election();
     }
 
 }
@@ -183,7 +184,7 @@ void *monitoring_thread(void *)
         {
             send_message(ALIVE_TYPE);
             update_manager(participant_id);
-            puts("I'm the manager!");
+            //puts("I'm the manager!");
         }
         else
         {
@@ -194,7 +195,7 @@ void *monitoring_thread(void *)
             }
             else
             {
-                printf("My manager is %08lx and he's alive and happy!\n", current_manager_id);
+                //printf("My manager is %08lx and he's alive and happy!\n", current_manager_id);
             }
         }
         sleep(1);

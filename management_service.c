@@ -153,7 +153,7 @@ int find_participant_by_hostname(char *hostname)
 void update_manager(uint64_t new_manager_id)
 {
     pthread_mutex_lock(&participants_mutex);
-    puts("Inserting new manager");
+    //puts("Inserting new manager");
     current_manager_id = new_manager_id;
     for (int i = 0; i < num_participants; i++)
     {
