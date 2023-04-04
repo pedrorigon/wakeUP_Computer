@@ -32,6 +32,5 @@ void *listen_monitoring(void *args);
 void *manager_start_monitoring_service(void *arg);
 void *listen_Confirmed_monitoring(void *args);
 void *exit_control(void *arg);
-void *monitor_manager_status(void *arg);
 
 #endif
